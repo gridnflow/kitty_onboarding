@@ -54,3 +54,6 @@
     color:#dfe6ee;font-size:14.5px;line-height:2;text-align:center;}
   #daysum .go{margin-top:24px;color:#7fded2;font-weight:800;font-size:15.5px;}
   #daysum .rst{margin-top:8px;color:#6f7b8c;font-size:12px;}
+#toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);display:none;
+  background:rgba(20,24,32,.85);color:#e8ecf2;padding:8px 16px;border-radius:999px;
+  font-size:13px;font-weight:700;}

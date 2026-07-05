@@ -362,11 +362,20 @@ const badge3d = new THREE.Group(); badge3d.visible = false;
   const stripe = box(.3,.1,.05, MAT.teal, 0, .15, .005, badge3d);
   stripe.rotation.x = -.1;
 }
+// 커피 트레이 (커피 배달 중일 때만 보임, 왼쪽 옆구리)
+const carryCup = new THREE.Group(); carryCup.visible = false;
+{
+  const cup = cyl(.12, .09, .2, 12, MAT.white, 0, 0, 0, carryCup);
+  cyl(.13, .13, .05, 12, MAT.teal, 0, .04, 0, carryCup);
+  box(.04, .1, .04, MAT.white, .15, 0, 0, carryCup);
+}
 const player = makePet('cat', 2.2, g => {
   // 사원증은 옆구리(오른쪽 옆면)에 부착
   badge3d.position.set(g.userData.width/2 + .04, .95, .1);
   badge3d.rotation.y = Math.PI/2;
   g.add(badge3d);
+  carryCup.position.set(-g.userData.width/2 - .1, 1.0, .1);
+  g.add(carryCup);
 });
 player.position.set(0, 0, 12);
 player.rotation.y = Math.PI;

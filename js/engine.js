@@ -150,6 +150,31 @@ const petLoader = (()=>{
   mgr.setURLModifier(url => url.includes('colormap') ? 'data:image/png;base64,' + PETS_B64.colormap : url);
   return new THREE.GLTFLoader(mgr);
 })();
+/* ---- 사운드 (sounds.js의 SND_B64, M 키로 음소거) ---- */
+let sndMuted = localStorage.getItem('meow_mute') === '1';
+let sndCtx = null;
+const sndBuffers = {};
+function playSnd(name, vol){
+  if (sndMuted || typeof SND_B64 === 'undefined' || !SND_B64[name]) return;
+  try {
+    sndCtx = sndCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const play = buf => {
+      const s = sndCtx.createBufferSource();
+      const g = sndCtx.createGain();
+      s.buffer = buf; g.gain.value = vol == null ? .5 : vol;
+      s.connect(g).connect(sndCtx.destination);
+      s.start();
+    };
+    if (sndBuffers[name]) play(sndBuffers[name]);
+    else sndCtx.decodeAudioData(b64ToBuf(SND_B64[name]), buf => { sndBuffers[name] = buf; play(buf); });
+  } catch(e){}
+}
+function toggleMute(){
+  sndMuted = !sndMuted;
+  localStorage.setItem('meow_mute', sndMuted ? '1' : '0');
+  return sndMuted;
+}
+
 const petCache = {};
 /* 이름의 동물을 지정 높이(월드 단위)로 불러온다. 발이 y=0, 정면 +z */
 function makePet(name, height, onReady){

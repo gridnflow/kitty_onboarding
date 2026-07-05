@@ -20,6 +20,28 @@ let cut = null;              // 컷신 자동 걷기
 
 
 
+const particles = [];
+function spawnBurst(x, y, z, color, n){
+  for (let i = 0; i < (n || 10); i++){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(.14, .14),
+      new THREE.MeshBasicMaterial({color, transparent:true, opacity:.95, side:THREE.DoubleSide, toneMapped:false}));
+    m.position.set(x + (Math.random()-.5)*1.6, y + Math.random()*.4, z + (Math.random()-.5)*.6);
+    m.userData.vy = 1.2 + Math.random()*1.4;
+    m.userData.ttl = .9 + Math.random()*.5;
+    m.rotation.set(Math.random()*3, Math.random()*3, 0);
+    scene.add(m);
+    particles.push(m);
+  }
+}
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.style.display = 'none', 1600);
+}
+
 function walkTo(x, z, dur, then){
   if (window.RIDE_FAST) dur = .05;               // 개발용(?autoride): 컷신 고속화
   cut = {fx:player.position.x, fz:player.position.z, tx:x, tz:z, t:0, dur, then};
@@ -60,7 +82,7 @@ function runFloors(from, to, arriveLbl, onArrive){
   const iv = setInterval(()=>{
     f += step;
     floorNumEl.textContent = f + 'F';
-    beep(520 + f*14, 0, .05);
+    playSnd('tick', .18);
     if (f === to){
       clearInterval(iv);
       floorLblEl.textContent = arriveLbl;
@@ -73,9 +95,10 @@ function rideSequence(cfg){
   busy = true;
   promptEl.style.display = 'none';
   marker.visible = false;
-  beep(700, 0, .1);
+  playSnd('dooropen', .5);
   cfg.setDoor(1);                                 // 문 열림
   setTimeout(()=> walkTo(cfg.walkIn[0], cfg.walkIn[1], 1.5, ()=>{
+    playSnd('doorclose', .5);
     cfg.setDoor(0);                               // 문 닫힘
     setTimeout(()=> runFloors(cfg.from, cfg.to, cfg.arriveLbl, ()=>{
       cfg.onSwap();                               // 씬 전환 + 도착층 문 열림
@@ -133,7 +156,7 @@ function doInteract(){
   const dx = player.position.x - it.x, dz = player.position.z - it.z;
   if (dx*dx + dz*dz > it.r*it.r) return;
   if (stage === 'badge'){
-    beep(660, 0, .08); beep(990, .09, .1);
+    playSnd('success', .55);
     document.getElementById('badge').style.display = 'flex';
     badge3d.visible = true;
     setStage('gate');
@@ -142,10 +165,12 @@ function doInteract(){
     promptEl.style.display = 'none';
     lobby.userData.tagCard.visible = true;        // 카드 태그 연출
     tagT = .001;
-    beep(880, .2, .09); beep(1320, .32, .12);
+    playSnd('tap', .6);
     setTimeout(()=>{
       for (const led of lobby.userData.readerLeds) led.material = MAT.ledGreen;
       lobby.userData.tagCard.visible = false;
+      playSnd('success', .55);
+      spawnBurst(player.position.x, 1.4, 2, 0x7fded2, 12);
       gateT = .001;
       setStage('elevator');
       busy = false;
@@ -160,6 +185,7 @@ function doInteract(){
     player.position.set(8, .5, 2.75);
     player.rotation.y = Math.PI;
     satOnce = true;
+    playSnd('fanfare', .45);
     taskDone('sit');
     setBigmsg('🎉 Clocked In!', 'Made it to 12F. Now go say hi to the team 🐾');
     setStage('done');
@@ -229,7 +255,7 @@ function taskDone(id){
   const tk = tasks.find(t => t.id === id);
   if (!tk || tk.done) return;
   tk.done = true;
-  beep(980, 0, .07);
+  playSnd('task', .5);
   renderQuest();
   updateMission();
 }
@@ -241,6 +267,7 @@ function renderQuest(){
 function updateCarry(){
   carryEl.style.display = coffees > 0 ? 'block' : 'none';
   carryEl.textContent = '☕ × ' + coffees;
+  carryCup.visible = coffees > 0;
 }
 
 function markerTo(x, y, z){ marker.visible = true; marker.position.set(x, y, z); }
@@ -308,7 +335,7 @@ function renderDlgLine(){
 }
 function advanceDlg(){
   if (dlgChoiceSet && dlgIdx === dlgLines.length - 1) return;          // 선택지 대기 중
-  if (dlgIdx < dlgLines.length - 1){ dlgIdx++; renderDlgLine(); return; }
+  if (dlgIdx < dlgLines.length - 1){ dlgIdx++; playSnd('click', .25); renderDlgLine(); return; }
   closeDlg();
 }
 function closeDlg(){
@@ -322,11 +349,11 @@ function pickChoice(i){
   const cs = dlgChoiceSet;
   dlgChoiceSet = null;
   if (i === cs.answer){
-    beep(880,0,.08); beep(1180,.1,.1);
+    playSnd('success', .55);
     dlgLines = [cs.right]; dlgIdx = 0;
     if (cs.onRight) dlgOnEnd = cs.onRight;
   } else {
-    beep(200,0,.2);
+    playSnd('error', .5);
     dlgLines = [cs.wrong]; dlgIdx = 0;
   }
   renderDlgLine();
@@ -345,6 +372,7 @@ function npcTalk(n){
     const giveTk = tasks.find(t => t.id === giveId);
     if (coffees > 0 && giveTk && !giveTk.done){
       coffees--; updateCarry();
+      playSnd('coffee', .5);
       hearts[n.name] = (hearts[n.name]||0) + 1; saveGame();
       say(n, ['☕ Oh! Thanks, rookie — just what I needed!', `(❤️ ${n.name}'s affinity went up!)`], {onEnd: () => taskDone(giveId)});
       return;
@@ -411,14 +439,14 @@ function missionCandidate(px, pz){
   if (day === 2 && !ended && tasks.some(t => t.id === 'coffee' && !t.done))
     consider(15, 8, 2.8, 'E: ☕ Grab 5 coffees', () => {
       coffees = 5; updateCarry();
-      beep(660,0,.08); beep(880,.1,.08);
+      playSnd('coffee', .6);
       taskDone('coffee');
       say(null, ['☕×5 acquired! The tray is nice and warm. Time to make the rounds.']);
     });
   if (day === 3 && !ended && tasks.some(t => t.id === 'copier' && !t.done))
     consider(-14.6, -6, 2.8, `E: 🛠 Fix the copier (${copierHits}/3)`, () => {
       copierHits++;
-      beep(160 + copierHits*70, 0, .13);
+      playSnd('error', .3);
       const cp = office.userData.copier;
       cp.rotation.z = .07;
       setTimeout(()=> cp.rotation.z = -.05, 90);
@@ -437,7 +465,8 @@ function missionCandidate(px, pz){
       ended = true; saveGame();
       setBigmsg('👑 Promoted!', 'Onboarding complete & corner office unlocked. Living the cat dream! 🎉');
       bigmsgEl.style.display = 'block';
-      beep(660,0,.12); beep(880,.13,.12); beep(1100,.26,.15); beep(1320,.42,.3);
+      playSnd('fanfare', .7);
+      spawnBurst(13.8, 2.5, -8, 0xffd777, 18);
       setTimeout(()=>{ bigmsgEl.style.display = 'none'; renderQuest(); updateMission(); }, 4800);
     });
   return best;
@@ -446,6 +475,7 @@ function missionCandidate(px, pz){
 /* ---- 하루 마감 / 다음 날 ---- */
 function showDaySummary(){
   busy = false; sumOpen = true;
+  playSnd('panel', .5);
   const heartsStr = NPCS.map(n => `${n.emoji}${'❤️'.repeat(hearts[n.name]||0) || '·'}`).join('&nbsp; ');
   document.getElementById('sumTitle').textContent = `DAY ${day} Complete!`;
   document.getElementById('sumBody').innerHTML =
@@ -487,6 +517,7 @@ addEventListener('keydown', e => {
     if (e.code === 'KeyE') advanceDlg();
     return;
   }
+  if (e.code === 'KeyM'){ toast(toggleMute() ? '🔇 Muted' : '🔊 Sound on'); return; }
   if (e.code === 'KeyE' && currentCand) currentCand.action();
 });
 addEventListener('keyup', e => keys[e.code] = false);
@@ -626,6 +657,15 @@ function animate(){
     card.rotation.z = Math.sin(tagT*Math.PI)*.25;
   }
 
+  // 파티클
+  for (let i = particles.length-1; i >= 0; i--){
+    const m = particles[i];
+    m.userData.ttl -= dt;
+    m.position.y += m.userData.vy * dt;
+    m.rotation.z += dt*4;
+    m.material.opacity = Math.max(0, m.userData.ttl);
+    if (m.userData.ttl <= 0){ scene.remove(m); particles.splice(i,1); }
+  }
   // 조형물 회전 + 마커 바운스
   lobby.userData.stack.rotation.y = t*.35;
   marker.userData.cone.position.y = .8 + Math.sin(t*3.2)*.18;
