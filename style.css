@@ -1,0 +1,56 @@
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif;}
+  canvas{display:block;}
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
+  .chip{position:absolute;top:16px;left:16px;background:rgba(20,24,32,.78);color:#e8ecf2;
+    padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;letter-spacing:-.2px;}
+  #prompt{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+    background:rgba(24,28,38,.9);color:#fff;padding:12px 22px;border-radius:999px;
+    font-size:16px;font-weight:700;display:none;white-space:nowrap;}
+  #objective{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
+    background:rgba(235,238,242,.9);color:#3a4150;padding:9px 18px;border-radius:999px;
+    font-size:13.5px;font-weight:600;white-space:nowrap;}
+  #fade{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .5s;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;}
+  #floorNum{font-size:76px;font-weight:800;color:#ffd777;}
+  #floorLbl{font-size:16px;color:#cfd6e0;margin-top:8px;}
+  #bigmsg{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);text-align:center;display:none;}
+  #bigmsg h1{color:#fff;font-size:46px;margin:0;text-shadow:0 4px 24px rgba(0,0,0,.55);}
+  #bigmsg p{color:#e6ecf4;font-size:17px;margin-top:12px;text-shadow:0 2px 12px rgba(0,0,0,.55);}
+  #badge{position:absolute;right:18px;bottom:26px;display:none;align-items:center;gap:12px;
+    background:#f7f5f1;border-radius:14px;padding:12px 16px 12px 12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);border-top:6px solid #d9a94a;
+    animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
+  #badge .bphoto{width:46px;height:46px;border-radius:10px;background:#7fded2;
+    display:flex;align-items:center;justify-content:center;font-size:28px;}
+  #badge .binfo{display:flex;flex-direction:column;line-height:1.35;}
+  #badge .binfo b{font-size:12px;letter-spacing:.12em;color:#a8792e;}
+  #badge .binfo span{font-size:14px;font-weight:700;color:#2c3340;}
+  #badge .binfo .bno{font-size:11px;font-weight:600;color:#8a91a0;letter-spacing:.06em;}
+  @keyframes pop{0%{transform:scale(.4) translateY(30px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+  /* ---- 온보딩 위크 UI ---- */
+  #quest{position:absolute;top:16px;right:16px;background:rgba(20,24,32,.8);border-radius:14px;
+    padding:13px 17px;min-width:210px;max-width:280px;}
+  #quest b{color:#ffd777;font-size:13.5px;letter-spacing:.02em;}
+  #quest .t{color:#dfe6ee;font-size:12.5px;font-weight:600;margin-top:7px;line-height:1.4;}
+  #quest .t.done{color:#67717f;text-decoration:line-through;}
+  #carry{position:absolute;left:16px;bottom:28px;background:rgba(20,24,32,.85);color:#ffd777;
+    padding:9px 15px;border-radius:999px;font-size:14.5px;font-weight:800;display:none;}
+  #dlg{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:min(620px,88vw);
+    background:rgba(16,19,26,.95);border-radius:16px;padding:16px 20px;display:none;
+    pointer-events:auto;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  #dlg .nm{font-weight:800;color:#7fded2;font-size:14.5px;display:inline;}
+  #dlg .hearts{color:#ff8f9e;font-size:12.5px;margin-left:8px;}
+  #dlg .tx{color:#eef2f8;font-size:14.5px;line-height:1.65;margin-top:7px;white-space:pre-wrap;}
+  #dlg .next{color:#8a91a0;font-size:11.5px;margin-top:9px;text-align:right;}
+  #dlg .choices{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  #dlg .choices button{background:#232833;border:1px solid #3a4150;color:#eef2f8;border-radius:10px;
+    padding:10px 13px;font-size:13.5px;font-weight:600;text-align:left;cursor:pointer;}
+  #dlg .choices button:hover{background:#2e3542;border-color:#7fded2;}
+  #daysum{position:absolute;inset:0;background:rgba(5,7,10,.9);display:none;flex-direction:column;
+    align-items:center;justify-content:center;pointer-events:auto;}
+  #daysum h1{color:#ffd777;font-size:44px;margin:0 0 16px;}
+  #daysum .box{background:rgba(255,255,255,.06);border-radius:14px;padding:18px 28px;
+    color:#dfe6ee;font-size:14.5px;line-height:2;text-align:center;}
+  #daysum .go{margin-top:24px;color:#7fded2;font-weight:800;font-size:15.5px;}
+  #daysum .rst{margin-top:8px;color:#6f7b8c;font-size:12px;}
