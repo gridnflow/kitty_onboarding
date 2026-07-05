@@ -16,6 +16,7 @@ let inOffice = false;        // currentFloor === 12 캐시
 let panelOpen = false;       // 층 선택 패널
 let sitting = false;         // 벤치 착석 중 (y 애니 보호)
 let roofBonusGiven = false, roofGuest = null, roofGuestNpc = null;
+let mockupCarried = false;   // DAY 5 목업 들고 다니기
 let satOnce = false;         // 한 번 출근 완료했는지
 let cut = null;              // 컷신 자동 걷기
 
@@ -126,6 +127,7 @@ function rideTo(target){
   }), 950);
 }
 function arriveFloor(n){
+  applyOfficeMood();
   if (n === 1){
     showDaySummary();                             // 1층 도착 = 하루 마감
   } else if (n === 12){
@@ -224,28 +226,15 @@ function setBigmsg(t, s){
   bigmsgEl.querySelector('p').textContent = s;
 }
 
+const isFreeDay = () => !DAYS[day];
 function setupDay(){
   coffees = 0; copierHits = 0; promoted = false; finalIdx = 0;
+  mockupCarried = false;
   updateCarry();
-  if (ended || day > 3){
+  if (isFreeDay()){
     tasks = [{id:'chill', label:'Free day — hang out and relax', done:true}];
-  } else if (day === 1){
-    tasks = [
-      {id:'sit', label:'Sit at your desk', done:false},
-      ...NPCS.map(n => ({id:'greet_'+n.name, label:`Say hi to ${n.emoji} ${n.name}`, done:false})),
-    ];
-  } else if (day === 2){
-    tasks = [
-      {id:'coffee', label:'☕ Grab 5 coffees from the pantry', done:false},
-      ...NPCS.map(n => ({id:'give_'+n.name, label:`Bring coffee to ${n.emoji} ${n.name}`, done:false})),
-      {id:'quiz', label:"🐼 Pass Pandol's pop quiz", done:false},
-    ];
   } else {
-    tasks = [
-      {id:'copier', label:'🛠 Fix the broken copier', done:false},
-      {id:'finalquiz', label:"🐼 Pandol's final quiz (3 questions)", done:false},
-      {id:'crown', label:'👑 Claim the corner office', done:false},
-    ];
+    tasks = DAYS[day].tasks().map(t => ({...t, done:false}));
   }
   renderQuest();
 }
@@ -259,13 +248,14 @@ function taskDone(id){
   updateMission();
 }
 function renderQuest(){
-  const title = (ended || day > 3) ? `DAY ${day} · Free Day` : `DAY ${day} / 3 · Onboarding Week`;
+  const title = isFreeDay() ? `DAY ${day} · Free Day` : `DAY ${day} · ${DAYS[day].title}`;
   questEl.innerHTML = `<b>${title}</b>` + tasks.map(t =>
     `<div class="t ${t.done?'done':''}">${t.done?'✅':'⬜'} ${t.label}</div>`).join('');
 }
 function updateCarry(){
-  carryEl.style.display = coffees > 0 ? 'block' : 'none';
-  carryEl.textContent = '☕ × ' + coffees;
+  const label = coffees > 0 ? '☕ × ' + coffees : mockupCarried ? '🎨 Mockup' : '';
+  carryEl.style.display = label ? 'block' : 'none';
+  carryEl.textContent = label;
   carryCup.visible = coffees > 0;
 }
 
@@ -294,6 +284,21 @@ function updateMission(){
       tgt = [n.home.x, 3.1, n.home.z];
     } else if (tk.id === 'copier'){ text = 'Fix the copier on the left wall (press E ×3)'; tgt = [-14.6, 2.8, -6]; }
     else if (tk.id === 'crown'){ text = 'Promoted! Take the corner office by the window'; tgt = [13.8, 3.4, -8]; }
+    else if (tk.id === 'meeting'){ text = 'Gather everyone on the rug'; tgt = [0, 2.6, 7]; }
+    else if (tk.id === 'mockup'){ text = 'Grab the mockup from your desk'; tgt = [8, 3.1, 2.8]; }
+    else if (tk.id.startsWith('show_')){
+      const n = npcByName[tk.id.slice(5)];
+      text = 'Design review — next: ' + n.name; tgt = [n.home.x, 3.1, n.home.z];
+    } else if (tk.id.startsWith('inspect_')){
+      const it2 = INSPECTS.find(i => i.id === tk.id);
+      text = 'Crunch night checks — ' + it2.label.replace('🔦 ', ''); tgt = [it2.pos[0], 2.8, it2.pos[1]];
+    } else if (tk.id === 'deploy'){
+      const n = npcByName['Yeoul'];
+      text = 'All checks done — tell Yeoul'; tgt = [n.home.x, 3.1, n.home.z];
+    } else if (tk.id.startsWith('retro_')){
+      const n = npcByName[tk.id.slice(6)];
+      text = 'Retro one-on-one — next: ' + n.name; tgt = [n.home.x, 3.1, n.home.z];
+    }
     else { text = 'Check your task list'; tgt = null; }
   }
   objectiveEl.textContent = `(DAY ${day}) ` + text;
@@ -406,6 +411,42 @@ function npcTalk(n){
       return;
     }
   }
+  if (day === 5){
+    const showId = 'show_' + n.name;
+    const tk = tasks.find(t => t.id === showId);
+    if (tk && !tk.done){
+      if (!mockupCarried){ say(n, ['Bring the mockup over first — it should be on your desk. 🎨']); return; }
+      say(n, [n.reviewLine || 'Looks good to me!'], {onEnd: () => {
+        taskDone(showId);
+        if (!tasks.some(t => t.id.startsWith('show_') && !t.done)){
+          mockupCarried = false; updateCarry();
+        }
+      }});
+      return;
+    }
+  }
+  if (day === 6 && n.name === 'Yeoul'){
+    const tk = tasks.find(t => t.id === 'deploy');
+    if (tk && !tk.done){
+      const checks = tasks.filter(t => t.id.startsWith('inspect_'));
+      if (!checks.every(t => t.done)){
+        say(n, ['Not yet — run the crunch-night checklist first. Blinds, coffee, copier.']);
+        return;
+      }
+      say(n, ['All green? Then we ship. 🚀 Deploying... done. Textbook Thursday.',
+              '(The office exhales. Crunch night survived.)'], {onEnd: () => taskDone('deploy')});
+      return;
+    }
+  }
+  if (day === 7){
+    const retroId = 'retro_' + n.name;
+    const tk = tasks.find(t => t.id === retroId);
+    if (tk && !tk.done){
+      hearts[n.name] = (hearts[n.name]||0) + 1; saveGame();
+      say(n, [n.retroLine || 'Good week!', `(❤️ ${n.name} appreciated the retro chat!)`], {onEnd: () => taskDone(retroId)});
+      return;
+    }
+  }
   say(n, [n.small[Math.random()*n.small.length|0]]);
 }
 
@@ -464,6 +505,23 @@ function missionCandidate(px, pz){
         say(null, ['📠 Whirrr— the copier lives! Go tell Pandol.']);
       }
     });
+  if (tasks.some(t => t.id === 'meeting' && !t.done) && !busy)
+    consider(0, 7, 2.8, day === 7 ? 'E: 📋 Kick off the retro' : 'E: 📋 Start the all-hands', startMeeting);
+  if (day === 5 && tasks.some(t => t.id === 'mockup' && !t.done))
+    consider(8, 2.7, 2.4, 'E: 🎨 Grab the mockup', () => {
+      mockupCarried = true; updateCarry();
+      playSnd('collect', .5);
+      taskDone('mockup');
+      say(null, ['Fresh mockup in paw. Time to collect reviews — Bori first, then Pandol.']);
+    });
+  if (day === 6) for (const ins of INSPECTS){
+    if (tasks.some(t => t.id === ins.id && !t.done))
+      consider(ins.pos[0], ins.pos[1], 2.6, 'E: ' + ins.label, () => {
+        playSnd('task', .4);
+        taskDone(ins.id);
+        say(null, [ins.line]);
+      });
+  }
   if (promoted && tasks.some(t => t.id === 'crown' && !t.done))
     consider(13.8, -7.6, 2.8, 'E: 👑 Sit in the corner office', () => {
       player.position.set(13.8, .55, -8.05);
@@ -477,6 +535,65 @@ function missionCandidate(px, pz){
       setTimeout(()=>{ bigmsgEl.style.display = 'none'; renderQuest(); updateMission(); }, 4800);
     });
   return best;
+}
+
+/* DAY 6 크런치 나이트: 12층에 있는 동안 전체 조도를 낮춘다 */
+function applyOfficeMood(){
+  const dim = day === 6 && currentFloor === 12;
+  scene.environment = dim ? null : envTex;        // IBL이 밝기의 대부분을 차지한다
+  ambientL.intensity = dim ? .07 : .22;
+  hemiL.intensity = dim ? .05 : .2;
+  sun.intensity = dim ? .22 : .6;
+  const L = office.userData.lights;
+  if (L){
+    L[0].intensity = dim ? .3 : .6;
+    L[1].intensity = dim ? .15 : .4;
+    L[2].intensity = dim ? .15 : .4;
+  }
+}
+
+/* ---- NPC 걷기 + 회의 ---- */
+const npcCuts = [];
+function npcWalkTo(n, x, z, finalY, dur){
+  return new Promise(res => {
+    n.walking = true;
+    n.pet.rotation.y = Math.atan2(x - n.pet.position.x, z - n.pet.position.z);
+    npcCuts.push({g: n.pet, fx: n.pet.position.x, fz: n.pet.position.z, tx: x, tz: z, t: 0,
+      dur: window.RIDE_FAST ? .05 : dur,
+      end(){ n.walking = false; n.baseY = finalY; n.pet.position.y = finalY; res(); }});
+  });
+}
+function runScript(script, done){
+  let i = 0;
+  const next = () => {
+    if (i >= script.length){ if (done) done(); return; }
+    const [who, line] = script[i++];
+    say(who ? npcByName[who] : null, [line], {onEnd: next});
+  };
+  next();
+}
+const MEETING_SPOTS = [[-2.2, 5.9], [2.2, 5.9], [-3, 8.1], [3, 8.1], [0, 9.2]];
+function startMeeting(){
+  busy = true;
+  promptEl.style.display = 'none';
+  playSnd('panel', .4);
+  Promise.all(NPCS.map((n, i) =>
+    npcWalkTo(n, MEETING_SPOTS[i][0], MEETING_SPOTS[i][1], 0, 1.6 + i*.18)
+  )).then(() => {
+    for (const [i, n] of NPCS.entries())
+      n.pet.rotation.y = Math.atan2(0 - MEETING_SPOTS[i][0], 7 - MEETING_SPOTS[i][1]);
+    busy = false;
+    runScript(DAYS[day].script || [], () => {
+      busy = true;
+      Promise.all(NPCS.map((n, i) =>
+        npcWalkTo(n, n.home.x, n.home.z, .52, 1.7 + i*.15)
+      )).then(() => {
+        for (const n of NPCS) n.pet.rotation.y = Math.PI;
+        busy = false;
+        taskDone('meeting');
+      });
+    });
+  });
 }
 
 /* ---- 옥상: 벤치/게스트 ---- */
@@ -515,7 +632,7 @@ function openFloorPanel(){
     const f = FLOORS[n];
     const b = document.createElement('button');
     const here = n === currentFloor;
-    const locked = n === 1 && currentFloor !== 1 && tasksLeft().length > 0 && !(ended || day > 3);
+    const locked = n === 1 && currentFloor !== 1 && tasksLeft().length > 0 && !isFreeDay();
     b.innerHTML = `<span>${f.icon} ${f.label}</span><span class="fs-note">${
       here ? 'You are here' : n === 1 ? (locked ? '🔒 Finish today\'s tasks' : 'Leave work · end the day') : ''}</span>`;
     b.disabled = here || locked;
@@ -535,10 +652,11 @@ function showDaySummary(){
   busy = false; sumOpen = true;
   playSnd('panel', .5);
   const heartsStr = NPCS.map(n => `${n.emoji}${'❤️'.repeat(hearts[n.name]||0) || '·'}`).join('&nbsp; ');
-  document.getElementById('sumTitle').textContent = `DAY ${day} Complete!`;
+  document.getElementById('sumTitle').textContent = day === 7 ? '🏆 WEEK 1 COMPLETE!' : `DAY ${day} Complete!`;
   document.getElementById('sumBody').innerHTML =
-    `Onboarding progress: ${tasks.filter(t=>t.done).length} / ${tasks.length}<br>Affinity: ${heartsStr}` +
-    (ended ? '<br>👑 Owner of the corner office!' : '');
+    `Tasks: ${tasks.filter(t=>t.done).length} / ${tasks.length}<br>Affinity: ${heartsStr}` +
+    (ended ? '<br>👑 Owner of the corner office!' : '') +
+    (day === 7 ? '<br>🏆 A full week at MEOW CORP — free days ahead!' : '');
   daysumEl.style.display = 'flex';
 }
 function nextMorning(){
@@ -552,6 +670,7 @@ function nextMorning(){
     currentFloor = 1; inOffice = false;
     lobby.visible = true; office.visible = false; roof.visible = false;
     clearRoofGuest(); roofBonusGiven = false;
+    applyOfficeMood();
     player.position.set(0, 0, 12); player.rotation.y = Math.PI; heading = Math.PI;
     camYaw = 0; camPitch = .34; camDist = 9.5;
     gateT = 0;                                    // 게이트는 매일 아침 다시 태그
@@ -678,7 +797,18 @@ function animate(){
   // 걷기/대기 애니메이션
   if (stage !== 'done' && !sitting) player.position.y = moving ? Math.abs(Math.sin(t*10))*.14 : Math.sin(t*2)*.03;
   player.rotation.z = moving ? Math.sin(t*10)*.06 : 0;                  // 걸을 때 좌우로 뒤뚱
-  for (const c of coworkers) c.position.y = .52 + Math.sin(t*2 + c.position.x)*.04;
+  for (const n of NPCS)
+    if (n.pet && !n.walking) n.pet.position.y = (n.baseY == null ? .52 : n.baseY) + Math.sin(t*2 + n.home.x)*.04;
+  // NPC 자동 걷기 (회의 소집 등)
+  for (let i = npcCuts.length-1; i >= 0; i--){
+    const c = npcCuts[i];
+    c.t += dt;
+    const k = Math.min(1, c.t / c.dur);
+    c.g.position.x = c.fx + (c.tx - c.fx) * k;
+    c.g.position.z = c.fz + (c.tz - c.fz) * k;
+    c.g.position.y = Math.abs(Math.sin(t*10)) * .1;
+    if (k >= 1){ npcCuts.splice(i, 1); c.end(); }
+  }
 
   // 게이트 날개 열림
   if (gateT > 0 && gateT < 1){
@@ -787,6 +917,7 @@ if (dbgParams.has('office')){
   camDist = 7; camPitch = .3;
   document.getElementById('badge').style.display = 'flex';
   badge3d.visible = true;
+  applyOfficeMood();
   if (day === 1 && !ended){ satOnce = false; setStage('desk'); }
   else setStage('free');
 }

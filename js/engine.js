@@ -35,7 +35,8 @@ addEventListener('resize', () => {
   lightBox(-6, 3, -6, .5, 4, 4, 0xffe0a8);
   lightBox(6, 3, 6, .5, 4, 4, 0x9adfd6);
   lightBox(6, 2, -6, 3, 3, .5, 0x8a6a3a);
-  scene.environment = pmrem.fromScene(env).texture;
+  var envTex = pmrem.fromScene(env).texture;   // var: 블록 밖(전역)에서 접근 가능해야 함
+  scene.environment = envTex;
   pmrem.dispose();
 }
 

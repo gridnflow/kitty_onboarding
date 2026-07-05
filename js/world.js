@@ -337,6 +337,7 @@ const coworkers = [];
   const a = new THREE.PointLight(0xfff2dd, .6, 40); a.position.set(0, 5.4, 0); office.add(a);
   const b = new THREE.PointLight(0xfff2dd, .4, 30); b.position.set(-10, 5.2, 4); office.add(b);
   const c = new THREE.PointLight(0xfff2dd, .4, 30); c.position.set(10, 5.2, -4); office.add(c);
+  office.userData.lights = [a, b, c];              // DAY 6 크런치 무드용
 }
 
 /* ================= 옥상 정원 (RF) ================= */
@@ -503,8 +504,9 @@ const FLOORS = {
 const floorName = n => n === 13 ? 'RF' : n + 'F';
 
 /* ================= 전역 조명 ================= */
-scene.add(new THREE.AmbientLight(0xbfc8d8, .22));
-scene.add(new THREE.HemisphereLight(0xcfd8e8, 0x201810, .2));
+const ambientL = new THREE.AmbientLight(0xbfc8d8, .22);
+const hemiL = new THREE.HemisphereLight(0xcfd8e8, 0x201810, .2);
+scene.add(ambientL, hemiL);
 const sun = new THREE.DirectionalLight(0xffeecc, .6);
 sun.position.set(10, 22, 12);
 sun.castShadow = true;
