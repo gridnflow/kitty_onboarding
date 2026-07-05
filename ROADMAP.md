@@ -1,7 +1,8 @@
 # MEOW CORP HQ — 개발 로드맵 & 인수인계 문서
 
 > 다음 세션(Opus 등)에서 이 앱을 이어서 발전시킬 때 반드시 먼저 읽을 것.
-> 마지막 업데이트: 2026-07-05
+> 마지막 업데이트: 2026-07-06 (M1~M5 완료, DEVELOPMENT_PLAN.md 참고)
+> 라이브: https://gridnflow.github.io/kitty_onboarding/
 
 ---
 
