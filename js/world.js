@@ -26,22 +26,25 @@ const W = 26, BACK = -20, FRONT = 22, WALL_H = 16;
   const logo = textPlane('MEOW CORP', 22, 4.1);
   logo.position.set(0, 12.6, BACK+.05); lobby.add(logo);
 
-  // 선반 3단 + 금색 라인 조명 + 유리 난간 + 동물 피규어
-  const figPets = ['bunny','chick','pig','penguin','koala','monkey','deer','fox'];
+  // 선반 3단 + 금색 라인 조명 + 유리 난간 + 동물 피규어 (도감 24종, 클릭 수집)
+  var figGroups = [];   // var: 전역 접근 (game.js 레이캐스트)
+  let figIdx = 0;
   for (const y of [5.2, 8.0, 10.8]){
     for (const [x0,x1] of [[-24,-3],[3,24]]){
       const cx = (x0+x1)/2, w = x1-x0;
       box(w, .3, 1.8, MAT.darkWood, cx, y, BACK+1.1, lobby);
       box(w, .07, .1, MAT.goldLit, cx, y+.18, BACK+2.02, lobby);       // 금색 라인
       box(w, .8, .05, MAT.glass, cx, y+.75, BACK+2.0, lobby);          // 유리 난간
-      for (let x=x0+1.5; x<x1-1; x+=3.2){
+      for (let x=x0+1.5; x<x1-1; x+=3.2)
         cyl(.03,.03,.85,8, MAT.silver, x, y+.72, BACK+2.0, lobby);     // 난간 지주
-        if (Math.random()<.75){
-          const fig = makePet(figPets[Math.random()*figPets.length|0], .95);
-          fig.position.set(x+ (Math.random()-.5), y+.16, BACK+1.1);
-          fig.rotation.y = Math.PI*(-.2+Math.random()*.4);
-          lobby.add(fig);
-        }
+      for (let k=0; k<4 && figIdx < FIGURES.length; k++){
+        const spec = FIGURES[figIdx++];
+        const fig = makePet(spec.sp, .95);
+        fig.position.set(x0 + 2.6 + k*5.2, y+.16, BACK+1.1);
+        fig.rotation.y = -.15 + Math.random()*.3;
+        fig.userData.species = spec.sp;
+        lobby.add(fig);
+        figGroups.push(fig);
       }
     }
   }

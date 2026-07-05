@@ -71,3 +71,17 @@
 #floorselList button:hover:not(:disabled){background:#2e3542;border-color:#7fded2;}
 #floorselList button:disabled{opacity:.45;cursor:default;}
 #floorselList .fs-note{font-size:11px;font-weight:600;color:#8a91a0;}
+#dossier{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(5,7,10,.55);pointer-events:auto;}
+#dossier .do-box{background:rgba(16,19,26,.97);border-radius:16px;padding:18px 20px;width:520px;
+  max-width:92vw;box-shadow:0 16px 50px rgba(0,0,0,.5);}
+#dossier .do-head{color:#ffd777;font-weight:800;font-size:15px;display:flex;
+  justify-content:space-between;align-items:center;margin-bottom:12px;}
+#dossier .do-head button{background:none;border:none;color:#9aa3b2;font-size:15px;cursor:pointer;}
+#dossierGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+#dossierGrid .fig{background:#1b202a;border:1px solid #2b313d;border-radius:10px;padding:8px 10px;
+  display:flex;flex-direction:column;gap:2px;opacity:.45;}
+#dossierGrid .fig.got{opacity:1;border-color:#7fded2;background:#20303a;}
+#dossierGrid .fig b{color:#eef2f8;font-size:12.5px;}
+#dossierGrid .fig span{color:#ffd777;font-size:11px;letter-spacing:.1em;}
+#dossier .do-hint{margin-top:12px;color:#8a91a0;font-size:11.5px;text-align:center;}

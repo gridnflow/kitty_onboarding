@@ -8,7 +8,7 @@
 </head>
 <body>
 <div id="hud">
-  <div class="chip">WASD Move / E Interact / Drag to Look / Scroll to Zoom / M Mute</div>
+  <div class="chip">WASD Move / E Interact / Drag to Look / Scroll to Zoom / F Collection / M Mute</div>
   <div id="prompt"></div>
   <div id="objective">MEOW CORP HQ — badge in, elevator up to your team on 12F</div>
   <div id="bigmsg"><h1>🎉 Clocked In!</h1><p>Made it to the team on 12F. Another purr-fect workday 🐾</p></div>
@@ -29,6 +29,13 @@
     <div class="fs-box">
       <div class="fs-head">🛗 Select Floor <button id="floorselClose">✕</button></div>
       <div id="floorselList"></div>
+    </div>
+  </div>
+  <div id="dossier">
+    <div class="do-box">
+      <div class="do-head"><span id="dossierTitle"></span><button onclick="toggleDossier()">✕</button></div>
+      <div id="dossierGrid"></div>
+      <div class="do-hint">Click figurines on the lobby shelves to collect them</div>
     </div>
   </div>
   <div id="daysum">

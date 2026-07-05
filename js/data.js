@@ -7,6 +7,7 @@ const NPCS = [
    roofLine:'Sunsets are the best color reference. Teal shadows, gold light... nature gets our brand. 🎨',
    reviewLine:'Ohh the mockup! Love the layout. Maybe 10% more gold on the header? Approved! 🎨',
    retroLine:'Good thing this week: you joined us! Keep bringing that energy 🐾',
+   small3:['Between us — I keep a folder of your best color picks. For inspiration! 🎨','Coffee later? My treat this time.'],
    intro:["Hi! I'm Bori, the designer 🎨 So nice to meet you!",
           'Our brand colors are "Teal + Gold". You saw the lobby, right? They\'re everywhere~',
           'Design requests are always welcome. Oh, and... this might be on a quiz? 🐾'],
@@ -14,6 +15,7 @@ const NPCS = [
   {species:'fox', name:'Yeoul', emoji:'🦊', role:'Senior Developer',
    roofLine:'I come up here after every Thursday deploy. Best debugging spot in the building.',
    retroLine:'Retro note: clean deploys, zero rollbacks. You did fine for a rookie.',
+   small3:['You know what, rookie... your code reviews aren\'t bad.','I opened a PR just to show you a trick. Don\'t tell anyone.'],
    intro:["I'm Yeoul. I write the code around here.",
           'One thing to remember — we deploy every "Thursday". No Friday deploys. Protect the weekend.',
           'Ask me anything about the codebase.'],
@@ -22,6 +24,7 @@ const NPCS = [
    roofLine:'A well-planned break is part of the sprint. Glad you found this place.',
    reviewLine:'Structurally solid. Ship it. I\'ll add it to the sprint board.',
    retroLine:'Retro item: onboarding went smoothly. Action item: keep it up next week.',
+   small3:['I put a gold star next to your name on the sprint board. Unofficially.','You\'d make a good PM someday. Scary thought, right?'],
    intro:["Hello, I'm Pandol, the PM.",
           'Our team runs on "2-week" sprints. Planning on Monday, retro on Friday.',
           "When onboarding wraps up, I'll give you a little quiz. Listen carefully~ 😏"],
@@ -29,6 +32,10 @@ const NPCS = [
   {species:'penguin', name:'Pingo', emoji:'🐧', role:'QA Engineer',
    roofLine:'Up here there are... no bugs. Well, except the ladybugs. Those are fine.',
    retroLine:'I only found two bugs today... that\'s a good week in my book.',
+   small3:['Honestly... days you\'re around, I worry about fewer things.','I trust your test coverage. That\'s the highest compliment I have.'],
+   questIntro:['Um... Nyang? Since we\'re close now, can I ask a favor?','I lost a printed MEOWTRACK ticket somewhere on this floor... it has my handwritten repro steps on it.','I think it flew off near the pantry. If you find it... I\'d be so grateful. 📄'],
+   questRemind:['Any luck with the ticket? I think it\'s somewhere near the pantry...'],
+   questThanks:['You found it!! My repro steps!! You\'re a lifesaver!!','Here — I want you to have this. A rare crab figurine from my desk collection. 🦀','(❤️❤️ Pingo trusts you completely now!)'],
    intro:["Oh... hi, I'm Pingo from QA.",
           'If you find a bug, please file it as a "MEOWTRACK" ticket. If you email it... it gets lost.',
           'There are always more edge cases than we think...'],
@@ -36,6 +43,7 @@ const NPCS = [
   {species:'tiger', name:'Hojin', emoji:'🐯', role:'Data Analyst',
    roofLine:'Fun stat: rooftop visits correlate with +23% afternoon productivity. Enjoy.',
    retroLine:'Week 1 stats: attendance 100%, coffee delivery success rate 100%. Impressive.',
+   small3:['My model predicts you\'ll be employee of the month. 94% confidence.','You\'re the only one who actually reads my dashboards. Respect.'],
    intro:["Hey rookie! Hojin, the data guy.",
           'Every metric lives on our dashboard "MEOWBOARD". Speak in numbers, listen in numbers.',
           'Not vibes — data. Got it? 🐯'],
@@ -119,3 +127,20 @@ const DAYS = {
     ['Pandol', 'Save it for the one-on-one~ Go, team!'],
   ]},
 };
+
+
+/* 피규어 도감 (로비 선반, 클릭 수집). stars = 희귀도 */
+const FIGURES = [
+  {sp:'cat', label:'Cat', stars:1}, {sp:'dog', label:'Dog', stars:1},
+  {sp:'bunny', label:'Bunny', stars:1}, {sp:'pig', label:'Pig', stars:1},
+  {sp:'chick', label:'Chick', stars:1}, {sp:'penguin', label:'Penguin', stars:1},
+  {sp:'fox', label:'Fox', stars:1}, {sp:'koala', label:'Koala', stars:1},
+  {sp:'monkey', label:'Monkey', stars:1}, {sp:'deer', label:'Deer', stars:1},
+  {sp:'cow', label:'Cow', stars:1}, {sp:'hog', label:'Boar', stars:1},
+  {sp:'panda', label:'Panda', stars:2}, {sp:'tiger', label:'Tiger', stars:2},
+  {sp:'beaver', label:'Beaver', stars:2}, {sp:'bee', label:'Bee', stars:2},
+  {sp:'caterpillar', label:'Caterpillar', stars:2}, {sp:'fish', label:'Fish', stars:2},
+  {sp:'parrot', label:'Parrot', stars:2}, {sp:'polar', label:'Polar Bear', stars:2},
+  {sp:'lion', label:'Lion', stars:3}, {sp:'elephant', label:'Elephant', stars:3},
+  {sp:'giraffe', label:'Giraffe', stars:3}, {sp:'crab', label:'Crab', stars:3},
+];

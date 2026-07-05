@@ -198,9 +198,26 @@ function doInteract(){
 }
 
 /* ================= 온보딩 위크: 하루/미션/대화 ================= */
-let day = +(localStorage.getItem('meow_day') || 1);
-let hearts = JSON.parse(localStorage.getItem('meow_hearts') || '{}');
-let ended = localStorage.getItem('meow_end') === '1';
+/* 저장 v2: 단일 키(meow_save). v1(meow_day/hearts/end)에서 자동 마이그레이션 */
+function loadSave(){
+  try {
+    const v2 = JSON.parse(localStorage.getItem('meow_save') || 'null');
+    if (v2 && v2.v === 2) return v2;
+  } catch(e){}
+  return {
+    v: 2,
+    day: +(localStorage.getItem('meow_day') || 1),
+    hearts: JSON.parse(localStorage.getItem('meow_hearts') || '{}'),
+    ended: localStorage.getItem('meow_end') === '1',
+    figures: [], quests: {},
+  };
+}
+const SAVE = loadSave();
+let day = SAVE.day;
+let hearts = SAVE.hearts;
+let ended = SAVE.ended;
+const figures = new Set(SAVE.figures);
+const quests = SAVE.quests;
 let tasks = [];
 let coffees = 0, copierHits = 0, promoted = false, finalIdx = 0;
 let dlgOpen = false, sumOpen = false;
@@ -211,14 +228,11 @@ const carryEl = document.getElementById('carry');
 const daysumEl = document.getElementById('daysum');
 
 function saveGame(){
-  localStorage.setItem('meow_day', day);
-  localStorage.setItem('meow_hearts', JSON.stringify(hearts));
-  if (ended) localStorage.setItem('meow_end', '1');
+  localStorage.setItem('meow_save', JSON.stringify(
+    {v:2, day, hearts, ended, figures:[...figures], quests}));
 }
 function resetGame(){
-  localStorage.removeItem('meow_day');
-  localStorage.removeItem('meow_hearts');
-  localStorage.removeItem('meow_end');
+  for (const k of ['meow_save','meow_day','meow_hearts','meow_end']) localStorage.removeItem(k);
   location.reload();
 }
 function setBigmsg(t, s){
@@ -447,7 +461,29 @@ function npcTalk(n){
       return;
     }
   }
-  say(n, [n.small[Math.random()*n.small.length|0]]);
+  if (n.name === 'Pingo' && (hearts.Pingo||0) >= 3 && quests.pingo !== 'done'){
+    if (!quests.pingo){
+      quests.pingo = 'active'; saveGame();
+      spawnTicket();
+      say(n, n.questIntro);
+      return;
+    }
+    if (!ticketPicked){ say(n, n.questRemind); return; }
+    quests.pingo = 'done';
+    hearts.Pingo = (hearts.Pingo||0) + 2;
+    saveGame();
+    playSnd('fanfare', .6);
+    say(n, n.questThanks, {onEnd: () => {
+      if (!figures.has('crab')){
+        figures.add('crab'); saveGame();
+        toast(`✨ Collected Crab! (${figures.size}/24 · ★★★)`);
+        playSnd('collect', .6);
+      }
+    }});
+    return;
+  }
+  const pool = (hearts[n.name]||0) >= 3 && n.small3 ? n.small3.concat(n.small) : n.small;
+  say(n, [pool[Math.random()*pool.length|0]]);
 }
 
 
@@ -522,6 +558,13 @@ function missionCandidate(px, pz){
         say(null, [ins.line]);
       });
   }
+  if (quests.pingo === 'active' && !ticketPicked)
+    consider(14.2, 6.2, 2.2, "E: 📄 Grab Pingo's lost ticket", () => {
+      ticketPicked = true;
+      office.remove(ticketProp);
+      playSnd('collect', .6);
+      toast('📄 Got the lost ticket! Bring it to Pingo.');
+    });
   if (promoted && tasks.some(t => t.id === 'crown' && !t.done))
     consider(13.8, -7.6, 2.8, 'E: 👑 Sit in the corner office', () => {
       player.position.set(13.8, .55, -8.05);
@@ -620,6 +663,62 @@ function roofTalk(){
   } else say(n, [line]);
 }
 
+/* ---- 피규어 수집 (로비 선반 클릭) + 도감(F) ---- */
+const raycaster = new THREE.Raycaster();
+const _ndc = new THREE.Vector2();
+let downX = 0, downY = 0, downT = 0;
+renderer.domElement.addEventListener('mousedown', e => { downX = e.clientX; downY = e.clientY; downT = Date.now(); });
+renderer.domElement.addEventListener('mouseup', e => {
+  if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6 || Date.now() - downT > 400) return;
+  if (currentFloor !== 1 || dlgOpen || sumOpen || panelOpen || busy) return;
+  _ndc.set((e.clientX/innerWidth)*2 - 1, -(e.clientY/innerHeight)*2 + 1);
+  raycaster.setFromCamera(_ndc, camera);
+  const hits = raycaster.intersectObjects(figGroups, true);
+  if (!hits.length || hits[0].distance > 34) return;
+  let g = hits[0].object;
+  while (g && !g.userData.species) g = g.parent;
+  if (g) collectFigure(g);
+});
+function collectFigure(g){
+  const spec = FIGURES.find(f => f.sp === g.userData.species);
+  if (!spec) return;
+  if (figures.has(spec.sp)){ toast(`${spec.label} is already in your collection`); return; }
+  figures.add(spec.sp);
+  saveGame();
+  playSnd('collect', .6);
+  const p = g.position;
+  spawnBurst(p.x, p.y + 1, p.z + .6, 0xffd777, 8);
+  toast(`✨ Collected ${spec.label}! (${figures.size}/24 · ${'★'.repeat(spec.stars)})`);
+  renderDossier();
+}
+const dossierEl = document.getElementById('dossier');
+function renderDossier(){
+  document.getElementById('dossierTitle').textContent = `🧸 Figurine Collection ${figures.size} / 24`;
+  document.getElementById('dossierGrid').innerHTML = FIGURES.map(f => {
+    const got = figures.has(f.sp);
+    return `<div class="fig ${got?'got':''}"><b>${got ? f.label : '???'}</b><span>${'★'.repeat(f.stars)}</span></div>`;
+  }).join('');
+}
+function toggleDossier(){
+  if (dossierEl.style.display === 'flex'){ dossierEl.style.display = 'none'; return; }
+  renderDossier();
+  playSnd('panel', .4);
+  dossierEl.style.display = 'flex';
+}
+
+/* ---- Pingo 개인 퀘스트 (호감도 3 이상) ---- */
+let ticketProp = null, ticketPicked = false;
+function spawnTicket(){
+  if (ticketProp) return;
+  ticketProp = new THREE.Group();
+  box(.42, .02, .3, MAT.white, 0, 0, 0, ticketProp);
+  box(.36, .022, .05, MAT.teal, 0, .002, -.08, ticketProp);
+  const glow = sph(.09, MAT.teal, 0, .25, 0, ticketProp);
+  glow.material = MAT.teal;
+  ticketProp.position.set(14.2, .6, 6.2);
+  office.add(ticketProp);
+}
+
 /* ---- 층 선택 패널 ---- */
 const floorselEl = document.getElementById('floorsel');
 function openFloorPanel(){
@@ -702,6 +801,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (e.code === 'KeyM'){ toast(toggleMute() ? '🔇 Muted' : '🔊 Sound on'); return; }
+  if (e.code === 'KeyF' && !dlgOpen && !sumOpen && !panelOpen){ toggleDossier(); return; }
   if (e.code === 'KeyE' && currentCand) currentCand.action();
 });
 addEventListener('keyup', e => keys[e.code] = false);
@@ -835,6 +935,11 @@ function animate(){
     card.rotation.z = Math.sin(tagT*Math.PI)*.25;
   }
 
+  // 잃어버린 티켓 연출
+  if (ticketProp && !ticketPicked){
+    ticketProp.rotation.y = t*2;
+    ticketProp.position.y = .6 + Math.sin(t*3)*.12;
+  }
   // 파티클
   for (let i = particles.length-1; i >= 0; i--){
     const m = particles[i];
@@ -931,4 +1036,5 @@ if (dbgParams.has('roof')){
   setStage('roof');
   spawnRoofGuest();
 }
+if (quests.pingo === 'active') spawnTicket();   // 진행 중이던 퀘스트 복원
 animate();
