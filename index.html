@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>MEOW CORP HQ</title>
@@ -65,13 +65,13 @@
 </head>
 <body>
 <div id="hud">
-  <div class="chip">WASD 이동 / E 상호작용 / 마우스 드래그 시점 / 휠 줌</div>
+  <div class="chip">WASD Move / E Interact / Drag to Look / Scroll to Zoom</div>
   <div id="prompt"></div>
-  <div id="objective">MEOW CORP HQ, 사원증 찍고 엘베 타고 12층 우리 팀으로</div>
-  <div id="bigmsg"><h1>🎉 출근 완료!</h1><p>12층 우리 팀 도착. 오늘도 냥냥히 일해보자 🐾</p></div>
+  <div id="objective">MEOW CORP HQ — badge in, elevator up to your team on 12F</div>
+  <div id="bigmsg"><h1>🎉 Clocked In!</h1><p>Made it to the team on 12F. Another purr-fect workday 🐾</p></div>
   <div id="badge">
     <div class="bphoto">🐱</div>
-    <div class="binfo"><b>MEOW CORP</b><span>냥냥이 · 12F 우리 팀</span><span class="bno">EMP NO. 1204</span></div>
+    <div class="binfo"><b>MEOW CORP</b><span>Nyang · 12F Team</span><span class="bno">EMP NO. 1204</span></div>
   </div>
   <div id="quest"></div>
   <div id="carry"></div>
@@ -79,13 +79,13 @@
     <span class="nm" id="dlgName"></span><span class="hearts" id="dlgHearts"></span>
     <div class="tx" id="dlgText"></div>
     <div class="choices" id="dlgChoices" style="display:none"></div>
-    <div class="next" id="dlgNext">E 또는 클릭으로 계속 ▸</div>
+    <div class="next" id="dlgNext">E or click to continue ▸</div>
   </div>
   <div id="daysum">
     <h1 id="sumTitle"></h1>
     <div class="box" id="sumBody"></div>
-    <div class="go">E: 다음 날 출근하기</div>
-    <div class="rst">R: 처음부터 다시</div>
+    <div class="go">E: Start the next day</div>
+    <div class="rst">R: Restart from Day 1</div>
   </div>
   <div id="fade"><div id="floorNum"></div><div id="floorLbl"></div></div>
 </div>
@@ -473,31 +473,31 @@ const W = 26, BACK = -20, FRONT = 22, WALL_H = 16;
 
 /* ================= NPC 정의 (온보딩 지식 포함) ================= */
 const NPCS = [
-  {species:'dog', name:'보리', emoji:'🐶', role:'디자이너',
-   intro:['안녕! 난 디자이너 보리야 🎨 만나서 반가워!',
-          '우리 회사 브랜드 컬러는 "청록 + 골드"야. 로비 가봤지? 온통 그 색이잖아~',
-          '디자인 요청은 언제든 환영이야. 참, 이건 시험에 나올지도? 🐾'],
-   small:['오늘 컨디션 최고야! 🎨','시안 3개 그리는 중~ 청록+골드는 진리야.','냥냥이 털 색 완전 예쁘다~']},
-  {species:'fox', name:'여울', emoji:'🦊', role:'시니어 개발자',
-   intro:['난 여울. 개발 담당이야.',
-          '중요한 거 하나만 기억해 — 배포는 매주 "목요일"이야. 금요일 배포는 금지. 주말을 지키자.',
-          '코드 궁금한 건 언제든 물어봐.'],
-   small:['리팩토링 중... 건들지 마.','목요일 배포 준비 끝. 완벽해.','커피가 코드 품질을 만든다.']},
-  {species:'panda', name:'판돌', emoji:'🐼', role:'프로덕트 매니저',
-   intro:['반가워요, PM 판돌입니다.',
-          '우리 팀 스프린트는 "2주" 단위로 돌아요. 월요일 플래닝, 금요일 회고.',
-          '온보딩 끝나면 제가 간단한 퀴즈를 낼 거예요. 잘 들어두세요~ 😏'],
-   small:['일정 정리 중이에요. 1) 회의 2) 회의 3) 회의...','스프린트는 2주! 잊지 마세요.','우선순위가 전부예요.']},
-  {species:'penguin', name:'핑고', emoji:'🐧', role:'QA 엔지니어',
-   intro:['아... 안녕하세요, QA 핑고예요.',
-          '버그를 발견하면 꼭 "MEOWTRACK"에 티켓으로 올려주세요. 이메일로 보내면... 잃어버려요.',
-          '엣지 케이스는 언제나 우리 생각보다 많아요...'],
-   small:['방금 버그 3개 찾았어요... 하아.','MEOWTRACK 확인하셨어요?','빈 입력값 테스트 해보셨나요...?']},
-  {species:'tiger', name:'호진', emoji:'🐯', role:'데이터 분석가',
-   intro:['어이 신입! 데이터의 호진이다.',
-          '모든 지표는 우리 대시보드 "MEOWBOARD"에 있어. 숫자로 말하고 숫자로 듣는 거야.',
-          '감이 아니라 데이터. 알겠지? 🐯'],
-   small:['오늘 DAU가 12% 올랐어. 내 덕이지.','MEOWBOARD 열어봐. 아름답다.','A/B 테스트는 B가 이겼어. 역시.']},
+  {species:'dog', name:'Bori', emoji:'🐶', role:'Designer',
+   intro:["Hi! I'm Bori, the designer 🎨 So nice to meet you!",
+          'Our brand colors are "Teal + Gold". You saw the lobby, right? They\'re everywhere~',
+          'Design requests are always welcome. Oh, and... this might be on a quiz? 🐾'],
+   small:['Feeling great today! 🎨','Sketching 3 mockups~ Teal + gold never fails.','Your fur color is so pretty, Nyang~']},
+  {species:'fox', name:'Yeoul', emoji:'🦊', role:'Senior Developer',
+   intro:["I'm Yeoul. I write the code around here.",
+          'One thing to remember — we deploy every "Thursday". No Friday deploys. Protect the weekend.',
+          'Ask me anything about the codebase.'],
+   small:['Refactoring... do not touch.','Thursday deploy is ready. Flawless.','Coffee is what makes code quality.']},
+  {species:'panda', name:'Pandol', emoji:'🐼', role:'Product Manager',
+   intro:["Hello, I'm Pandol, the PM.",
+          'Our team runs on "2-week" sprints. Planning on Monday, retro on Friday.',
+          "When onboarding wraps up, I'll give you a little quiz. Listen carefully~ 😏"],
+   small:['Sorting the schedule: 1) meeting 2) meeting 3) meeting...',"Sprints are 2 weeks! Don't forget.",'Priorities are everything.']},
+  {species:'penguin', name:'Pingo', emoji:'🐧', role:'QA Engineer',
+   intro:["Oh... hi, I'm Pingo from QA.",
+          'If you find a bug, please file it as a "MEOWTRACK" ticket. If you email it... it gets lost.',
+          'There are always more edge cases than we think...'],
+   small:['Just found 3 bugs... sigh.','Did you check MEOWTRACK?','Have you tested the empty-input case...?']},
+  {species:'tiger', name:'Hojin', emoji:'🐯', role:'Data Analyst',
+   intro:["Hey rookie! Hojin, the data guy.",
+          'Every metric lives on our dashboard "MEOWBOARD". Speak in numbers, listen in numbers.',
+          'Not vibes — data. Got it? 🐯'],
+   small:["DAU is up 12% today. You're welcome.",'Open MEOWBOARD. Beautiful.','The A/B test? B won. As I predicted.']},
 ];
 const npcByName = {};
 for (const n of NPCS) npcByName[n.name] = n;
@@ -545,7 +545,7 @@ const coworkers = [];
   const dR = box(1.48, 3.8, .18, MAT.gold,  .75, 1.9, .28, ele, true);
   office.userData.doors = [dL, dR];
 
-  const sign = textPlane('MEOW CORP · 12F 우리 팀', 10, 1.3, '#5a4a32');
+  const sign = textPlane('MEOW CORP · 12F Our Team', 10, 1.3, '#5a4a32');
   sign.position.set(-9, 4.6, OD-.05); sign.rotation.y = Math.PI; office.add(sign);
 
   // 책상들 (2줄 x 3), 마지막 하나가 내 자리
@@ -603,7 +603,7 @@ const coworkers = [];
   cyl(.09,.07,.14,10, MAT.white, 0, .1, .38, coffeeMachine);            // 컵
   cyl(.09,.07,.14,10, MAT.white, .25, 1.05, -.2, coffeeMachine);
   cyl(.09,.07,.14,10, MAT.white, -.25, 1.05, -.2, coffeeMachine);
-  const kettle = textPlane('☕ 탕비실', 2.4, .5, '#8a6a4a');
+  const kettle = textPlane('☕ Pantry', 2.4, .5, '#8a6a4a');
   kettle.position.set(-.86, 2.2, 0); kettle.rotation.y = -Math.PI/2; office.add(kettle);
   kettle.position.x = 14.2; kettle.position.z = 8;
 
@@ -698,19 +698,19 @@ let satOnce = false;         // 한 번 출근 완료했는지
 let cut = null;              // 컷신 자동 걷기
 
 const OBJECTIVES = {
-  badge: '먼저 안내 데스크에서 사원증을 받자',
-  gate: '사원증을 리더기에 태그하고 게이트 통과',
-  elevator: '엘리베이터를 타고 12층 우리 팀으로',
-  desk: '12층 도착! 창가 쪽 내 자리를 찾아 앉자',
-  done: '출근 완료! 오늘도 냥냥히 일해보자 🐾',
-  free: '출근 완료! 엘리베이터를 타면 1층으로 내려갈 수 있어 🐾',
+  badge: 'First, get your badge at the front desk',
+  gate: 'Tap your badge on the reader to pass the gate',
+  elevator: 'Take the elevator up to your team on 12F',
+  desk: 'Welcome to 12F! Find your desk by the window',
+  done: 'Clocked in! Time to work, meow 🐾',
+  free: 'Clocked in! You can take the elevator down anytime 🐾',
 };
 const INTERACTS = {
-  badge:    {x:-5.6, z:3.8, r:2.5, label:'E: 사원증 받기', markPos:[-5.6,2.7,2.6]},
-  gate:     {x:0, z:3.4,  r:2.6, label:'E: 사원증 태그하고 출입', markPos:[0,2.6,2.6]},
-  elevator: {x:0, z:-17.6,r:2.8, label:'E: 엘리베이터 타고 12층으로', markPos:[0,4.9,-18.2]},
-  desk:     {x:8, z:3.4,  r:2.6, label:'E: 내 자리에 앉기 (출근 완료)', markPos:[8,3.1,2.8]},
-  free:     {x:0, z:9.4,  r:2.8, label:'E: 퇴근하기 (엘리베이터)', markPos:[0,4.9,9.2]},
+  badge:    {x:-5.6, z:3.8, r:2.5, label:'E: Get your badge', markPos:[-5.6,2.7,2.6]},
+  gate:     {x:0, z:3.4,  r:2.6, label:'E: Tap badge to enter', markPos:[0,2.6,2.6]},
+  elevator: {x:0, z:-17.6,r:2.8, label:'E: Take elevator to 12F', markPos:[0,4.9,-18.2]},
+  desk:     {x:8, z:3.4,  r:2.6, label:'E: Sit at your desk (clock in)', markPos:[8,3.1,2.8]},
+  free:     {x:0, z:9.4,  r:2.8, label:'E: Leave work (elevator)', markPos:[0,4.9,9.2]},
 };
 
 function walkTo(x, z, dur, then){
@@ -752,7 +752,7 @@ function rideElevator(){
     lobbyDoorTarget = 0;                          // 문 닫힘
     setTimeout(()=>{
       fadeEl.style.opacity = 1;
-      floorLblEl.textContent = '올라가는 중…';
+      floorLblEl.textContent = 'Going up…';
       let f = 1;
       floorNumEl.textContent = '1F';
       const iv = setInterval(()=>{
@@ -761,7 +761,7 @@ function rideElevator(){
         beep(520 + f*14, 0, .05);
         if (f >= 12){
           clearInterval(iv);
-          floorLblEl.textContent = '12층 · 우리 팀';
+          floorLblEl.textContent = '12F · Our Team';
           setTimeout(()=>{
             lobby.visible = false;
             office.visible = true;
@@ -796,7 +796,7 @@ function rideDown(){
     officeDoorTarget = 0;
     setTimeout(()=>{
       fadeEl.style.opacity = 1;
-      floorLblEl.textContent = '내려가는 중…';
+      floorLblEl.textContent = 'Going down…';
       let f = 12;
       floorNumEl.textContent = '12F';
       const iv = setInterval(()=>{
@@ -805,7 +805,7 @@ function rideDown(){
         beep(520 + f*14, 0, .05);
         if (f <= 1){
           clearInterval(iv);
-          floorLblEl.textContent = '1층 · 로비';
+          floorLblEl.textContent = '1F · Lobby';
           setTimeout(()=>{
             office.visible = false;
             lobby.visible = true;
@@ -856,14 +856,14 @@ function doInteract(){
     rideElevator();
   } else if (stage === 'free'){
     if (tasksLeft().length && !(ended || day > 3)){
-      say(null, ['아직 오늘 할 일이 남았다! 우상단 체크리스트를 확인하자.']);
+      say(null, ['Still got tasks left today! Check the list at the top right.']);
     } else rideDown();
   } else if (stage === 'desk'){
     player.position.set(8, .5, 2.75);
     player.rotation.y = Math.PI;
     satOnce = true;
     taskDone('sit');
-    setBigmsg('🎉 출근 완료!', '12층 우리 팀 도착. 이제 팀원들에게 인사하러 가자 🐾');
+    setBigmsg('🎉 Clocked In!', 'Made it to 12F. Now go say hi to the team 🐾');
     setStage('done');
     promptEl.style.display = 'none';
     bigmsgEl.style.display = 'block';
@@ -905,23 +905,23 @@ function setupDay(){
   coffees = 0; copierHits = 0; promoted = false; finalIdx = 0;
   updateCarry();
   if (ended || day > 3){
-    tasks = [{id:'chill', label:'자유 출근 — 편하게 지내기', done:true}];
+    tasks = [{id:'chill', label:'Free day — hang out and relax', done:true}];
   } else if (day === 1){
     tasks = [
-      {id:'sit', label:'내 자리에 앉기', done:false},
-      ...NPCS.map(n => ({id:'greet_'+n.name, label:`${n.emoji} ${n.name}에게 인사하기`, done:false})),
+      {id:'sit', label:'Sit at your desk', done:false},
+      ...NPCS.map(n => ({id:'greet_'+n.name, label:`Say hi to ${n.emoji} ${n.name}`, done:false})),
     ];
   } else if (day === 2){
     tasks = [
-      {id:'coffee', label:'☕ 탕비실에서 커피 5잔 담기', done:false},
-      ...NPCS.map(n => ({id:'give_'+n.name, label:`${n.emoji} ${n.name}에게 커피 주기`, done:false})),
-      {id:'quiz', label:'🐼 판돌의 깜짝 퀴즈 풀기', done:false},
+      {id:'coffee', label:'☕ Grab 5 coffees from the pantry', done:false},
+      ...NPCS.map(n => ({id:'give_'+n.name, label:`Bring coffee to ${n.emoji} ${n.name}`, done:false})),
+      {id:'quiz', label:"🐼 Pass Pandol's pop quiz", done:false},
     ];
   } else {
     tasks = [
-      {id:'copier', label:'🛠 고장 난 복사기 고치기', done:false},
-      {id:'finalquiz', label:'🐼 판돌의 최종 퀴즈 (3문제)', done:false},
-      {id:'crown', label:'👑 코너 오피스에 앉기', done:false},
+      {id:'copier', label:'🛠 Fix the broken copier', done:false},
+      {id:'finalquiz', label:"🐼 Pandol's final quiz (3 questions)", done:false},
+      {id:'crown', label:'👑 Claim the corner office', done:false},
     ];
   }
   renderQuest();
@@ -936,7 +936,7 @@ function taskDone(id){
   updateMission();
 }
 function renderQuest(){
-  const title = (ended || day > 3) ? `DAY ${day} · 자유 출근` : `DAY ${day} / 3 · 온보딩 위크`;
+  const title = (ended || day > 3) ? `DAY ${day} · Free Day` : `DAY ${day} / 3 · Onboarding Week`;
   questEl.innerHTML = `<b>${title}</b>` + tasks.map(t =>
     `<div class="t ${t.done?'done':''}">${t.done?'✅':'⬜'} ${t.label}</div>`).join('');
 }
@@ -951,26 +951,26 @@ function updateMission(){
   const left = tasksLeft();
   let text, tgt;
   if (!left.length){
-    text = '오늘 할 일 끝! 엘리베이터로 퇴근하자';
+    text = 'All done for today! Take the elevator home';
     tgt = [0, 4.9, 9.2];
   } else {
     const tk = left[0];
     if (tk.id.startsWith('greet_')){
       const n = npcByName[tk.id.slice(6)];
-      text = '팀원들에게 인사하자 — 다음: ' + n.name;
+      text = 'Meet the team — next up: ' + n.name;
       tgt = [n.home.x, 3.1, n.home.z];
-    } else if (tk.id === 'coffee'){ text = '오른쪽 벽 탕비실에서 커피를 담자'; tgt = [15, 2.8, 8]; }
+    } else if (tk.id === 'coffee'){ text = 'Grab coffee at the pantry (right wall)'; tgt = [15, 2.8, 8]; }
     else if (tk.id.startsWith('give_')){
       const n = npcByName[tk.id.slice(5)];
-      text = '커피 배달 — 다음: ' + n.name;
+      text = 'Coffee delivery — next up: ' + n.name;
       tgt = [n.home.x, 3.1, n.home.z];
     } else if (tk.id === 'quiz' || tk.id === 'finalquiz'){
-      const n = npcByName['판돌'];
-      text = '판돌에게 가서 퀴즈를 풀자';
+      const n = npcByName['Pandol'];
+      text = "Go take Pandol's quiz";
       tgt = [n.home.x, 3.1, n.home.z];
-    } else if (tk.id === 'copier'){ text = '왼쪽 벽의 복사기를 고치자 (E 3번)'; tgt = [-14.6, 2.8, -6]; }
-    else if (tk.id === 'crown'){ text = '승진! 창가 코너 오피스에 앉자'; tgt = [13.8, 3.4, -8]; }
-    else { text = '오늘 할 일을 확인하자'; tgt = null; }
+    } else if (tk.id === 'copier'){ text = 'Fix the copier on the left wall (press E ×3)'; tgt = [-14.6, 2.8, -6]; }
+    else if (tk.id === 'crown'){ text = 'Promoted! Take the corner office by the window'; tgt = [13.8, 3.4, -8]; }
+    else { text = 'Check your task list'; tgt = null; }
   }
   objectiveEl.textContent = `(DAY ${day}) ` + text;
   if (tgt) markerTo(...tgt);
@@ -988,7 +988,7 @@ function say(npc, lines, opts){
   renderDlgLine();
 }
 function renderDlgLine(){
-  document.getElementById('dlgName').textContent = dlgNpc ? `${dlgNpc.emoji} ${dlgNpc.name} · ${dlgNpc.role}` : '📢 안내';
+  document.getElementById('dlgName').textContent = dlgNpc ? `${dlgNpc.emoji} ${dlgNpc.name} · ${dlgNpc.role}` : '📢 Notice';
   document.getElementById('dlgHearts').textContent = dlgNpc ? '❤️'.repeat(hearts[dlgNpc.name]||0) : '';
   document.getElementById('dlgText').textContent = dlgLines[dlgIdx];
   const last = dlgIdx === dlgLines.length - 1;
@@ -1048,33 +1048,33 @@ function npcTalk(n){
     if (coffees > 0 && giveTk && !giveTk.done){
       coffees--; updateCarry();
       hearts[n.name] = (hearts[n.name]||0) + 1; saveGame();
-      say(n, ['☕ 오! 고마워 신입, 딱 필요했는데!', `(❤️ ${n.name}의 호감도가 올랐다!)`], {onEnd: () => taskDone(giveId)});
+      say(n, ['☕ Oh! Thanks, rookie — just what I needed!', `(❤️ ${n.name}'s affinity went up!)`], {onEnd: () => taskDone(giveId)});
       return;
     }
-    if (n.name === '판돌'){
+    if (n.name === 'Pandol'){
       const quizTk = tasks.find(t => t.id === 'quiz');
       const gives = tasks.filter(t => t.id.startsWith('give_'));
       if (quizTk && !quizTk.done){
         if (!gives.every(t => t.done)){
-          say(n, ['커피 배달이 먼저예요~ 탕비실은 오른쪽 벽! ☕']);
+          say(n, ['Coffee delivery first~ The pantry is on the right wall! ☕']);
           return;
         }
-        say(n, ['커피 잘 마셨어요. 그럼... 깜짝 퀴즈! 😏', '우리 팀 스프린트 주기는 얼마일까요?'], {choices:{
-          options:['1주','2주','한 달'], answer:1,
-          right:'정답! 역시 잘 듣고 다니네요. 내일은 최종 퀴즈예요, 각오하세요~',
-          wrong:'땡! 제가 어제 소개할 때 말했는데... 힌트 듣고 다시 오세요. (제 자리 근처에서 서성이면 알려줄지도)',
+        say(n, ['Thanks for the coffee. Now... pop quiz! 😏', "How long is our team's sprint cycle?"], {choices:{
+          options:['1 week','2 weeks','1 month'], answer:1,
+          right:"Correct! You've been paying attention. Tomorrow is the final quiz — be ready~",
+          wrong:"Wrong! I mentioned it in my intro yesterday... get a refresher and come back.",
           onRight: () => taskDone('quiz'),
         }});
         return;
       }
     }
   }
-  if (day === 3 && !ended && n.name === '판돌'){
+  if (day === 3 && !ended && n.name === 'Pandol'){
     const fq = tasks.find(t => t.id === 'finalquiz');
     if (fq && !fq.done){
       const cop = tasks.find(t => t.id === 'copier');
       if (cop && !cop.done){
-        say(n, ['복사기부터 고쳐줘요! 온보딩 수료증을 못 뽑고 있어요 🐼💦 (왼쪽 벽이에요)']);
+        say(n, ["Fix the copier first! I can't print your onboarding certificate 🐼💦 (left wall)"]);
         return;
       }
       finalQuiz(n);
@@ -1085,17 +1085,17 @@ function npcTalk(n){
 }
 
 const FINAL_QUIZ = [
-  {q:'최종 퀴즈 1/3! 우리 팀 배포 요일은?', options:['화요일','목요일','금요일'], answer:1, hint:'여울'},
-  {q:'2/3! MEOW CORP 브랜드 컬러는?', options:['빨강 + 검정','보라 + 회색','청록 + 골드'], answer:2, hint:'보리'},
-  {q:'마지막 3/3! 버그를 발견하면 어디에 올리죠?', options:['MEOWTRACK 티켓','이메일','포스트잇'], answer:0, hint:'핑고'},
+  {q:'Final quiz 1/3! Which day do we deploy?', options:['Tuesday','Thursday','Friday'], answer:1, hint:'Yeoul'},
+  {q:"2/3! What are MEOW CORP's brand colors?", options:['Red + Black','Purple + Gray','Teal + Gold'], answer:2, hint:'Bori'},
+  {q:'Last one, 3/3! Where do you file a bug?', options:['A MEOWTRACK ticket','Email','A sticky note'], answer:0, hint:'Pingo'},
 ];
 function finalQuiz(n){
   const fq = FINAL_QUIZ[finalIdx];
   say(n, [fq.q], {choices:{
     options: fq.options, answer: fq.answer,
-    right: finalIdx < 2 ? '정답! 다음 문제 갑니다.'
-         : '전부 정답! 🎉 온보딩 수료입니다. 승진 축하해요 — 창가 코너 오피스가 이제 냥냥 님 자리예요! 👑',
-    wrong: `음~ 틀렸어요. ${fq.hint}에게 힌트를 듣고 다시 오세요!`,
+    right: finalIdx < 2 ? 'Correct! Next question.'
+         : 'All correct! 🎉 Onboarding complete. Congrats on the promotion — the corner office by the window is yours now, Nyang! 👑',
+    wrong: `Hmm~ wrong. Go get a hint from ${fq.hint} and come back!`,
     onRight: () => {
       finalIdx++;
       if (finalIdx < 3) finalQuiz(n);
@@ -1113,16 +1113,16 @@ function missionCandidate(px, pz){
     if (d2 < r*r && (!best || d2 < best.d2)) best = {d2, label, action};
   };
   for (const n of NPCS)
-    if (n.home) consider(n.home.x, n.home.z, 2.4, `E: ${n.emoji} ${n.name}와 대화`, () => npcTalk(n));
+    if (n.home) consider(n.home.x, n.home.z, 2.4, `E: Talk to ${n.emoji} ${n.name}`, () => npcTalk(n));
   if (day === 2 && !ended && tasks.some(t => t.id === 'coffee' && !t.done))
-    consider(15, 8, 2.8, 'E: ☕ 커피 5잔 담기', () => {
+    consider(15, 8, 2.8, 'E: ☕ Grab 5 coffees', () => {
       coffees = 5; updateCarry();
       beep(660,0,.08); beep(880,.1,.08);
       taskDone('coffee');
-      say(null, ['☕×5 획득! 트레이가 따끈따끈하다. 팀원들에게 돌리자.']);
+      say(null, ['☕×5 acquired! The tray is nice and warm. Time to make the rounds.']);
     });
   if (day === 3 && !ended && tasks.some(t => t.id === 'copier' && !t.done))
-    consider(-14.6, -6, 2.8, `E: 🛠 복사기 고치기 (${copierHits}/3)`, () => {
+    consider(-14.6, -6, 2.8, `E: 🛠 Fix the copier (${copierHits}/3)`, () => {
       copierHits++;
       beep(160 + copierHits*70, 0, .13);
       const cp = office.userData.copier;
@@ -1132,16 +1132,16 @@ function missionCandidate(px, pz){
       if (copierHits >= 3){
         office.userData.copierLed.material = MAT.ledGreen;
         taskDone('copier');
-        say(null, ['📠 위이잉— 복사기가 살아났다! 판돌에게 알리자.']);
+        say(null, ['📠 Whirrr— the copier lives! Go tell Pandol.']);
       }
     });
   if (promoted && tasks.some(t => t.id === 'crown' && !t.done))
-    consider(13.8, -7.6, 2.8, 'E: 👑 코너 오피스에 앉기', () => {
+    consider(13.8, -7.6, 2.8, 'E: 👑 Sit in the corner office', () => {
       player.position.set(13.8, .55, -8.05);
       player.rotation.y = Math.PI;
       taskDone('crown');
       ended = true; saveGame();
-      setBigmsg('👑 승진!', '온보딩 수료 & 코너 오피스 입성. 냥생 역전! 🎉');
+      setBigmsg('👑 Promoted!', 'Onboarding complete & corner office unlocked. Living the cat dream! 🎉');
       bigmsgEl.style.display = 'block';
       beep(660,0,.12); beep(880,.13,.12); beep(1100,.26,.15); beep(1320,.42,.3);
       setTimeout(()=>{ bigmsgEl.style.display = 'none'; renderQuest(); updateMission(); }, 4800);
@@ -1153,10 +1153,10 @@ function missionCandidate(px, pz){
 function showDaySummary(){
   busy = false; sumOpen = true;
   const heartsStr = NPCS.map(n => `${n.emoji}${'❤️'.repeat(hearts[n.name]||0) || '·'}`).join('&nbsp; ');
-  document.getElementById('sumTitle').textContent = `DAY ${day} 완료!`;
+  document.getElementById('sumTitle').textContent = `DAY ${day} Complete!`;
   document.getElementById('sumBody').innerHTML =
-    `온보딩 진행: ${tasks.filter(t=>t.done).length} / ${tasks.length}<br>호감도: ${heartsStr}` +
-    (ended ? '<br>👑 코너 오피스의 주인!' : '');
+    `Onboarding progress: ${tasks.filter(t=>t.done).length} / ${tasks.length}<br>Affinity: ${heartsStr}` +
+    (ended ? '<br>👑 Owner of the corner office!' : '');
   daysumEl.style.display = 'flex';
 }
 function nextMorning(){
@@ -1174,7 +1174,7 @@ function nextMorning(){
     lobby.userData.wings[1].rotation.y = 0;
     for (const led of lobby.userData.readerLeds) led.material = MAT.ledRed;
     setStage('gate');
-    objectiveEl.textContent = `(DAY ${day}) 좋은 아침! 게이트 찍고 12층으로`;
+    objectiveEl.textContent = `(DAY ${day}) Good morning! Tap the gate and head up to 12F`;
     fadeEl.style.opacity = 0;
   }, 650);
 }
@@ -1389,7 +1389,7 @@ if (day === 1 && !ended){
   document.getElementById('badge').style.display = 'flex';
   badge3d.visible = true;
   setStage('gate');
-  objectiveEl.textContent = `(DAY ${day}) 좋은 아침! 게이트 찍고 12층으로`;
+  objectiveEl.textContent = `(DAY ${day}) Good morning! Tap the gate and head up to 12F`;
 }
 if (dbgParams.has('office')){
   lobby.visible = false; office.visible = true; inOffice = true;
