@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>MEOW CORP HQ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif;}
+  canvas{display:block;}
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
+  .chip{position:absolute;top:16px;left:16px;background:rgba(20,24,32,.78);color:#e8ecf2;
+    padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;letter-spacing:-.2px;}
+  #prompt{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+    background:rgba(24,28,38,.9);color:#fff;padding:12px 22px;border-radius:999px;
+    font-size:16px;font-weight:700;display:none;white-space:nowrap;}
+  #objective{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
+    background:rgba(235,238,242,.9);color:#3a4150;padding:9px 18px;border-radius:999px;
+    font-size:13.5px;font-weight:600;white-space:nowrap;}
+  #fade{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .5s;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;}
+  #floorNum{font-size:76px;font-weight:800;color:#ffd777;}
+  #floorLbl{font-size:16px;color:#cfd6e0;margin-top:8px;}
+  #bigmsg{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);text-align:center;display:none;}
+  #bigmsg h1{color:#fff;font-size:46px;margin:0;text-shadow:0 4px 24px rgba(0,0,0,.55);}
+  #bigmsg p{color:#e6ecf4;font-size:17px;margin-top:12px;text-shadow:0 2px 12px rgba(0,0,0,.55);}
+  #badge{position:absolute;right:18px;bottom:26px;display:none;align-items:center;gap:12px;
+    background:#f7f5f1;border-radius:14px;padding:12px 16px 12px 12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);border-top:6px solid #d9a94a;
+    animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
+  #badge .bphoto{width:46px;height:46px;border-radius:10px;background:#7fded2;
+    display:flex;align-items:center;justify-content:center;font-size:28px;}
+  #badge .binfo{display:flex;flex-direction:column;line-height:1.35;}
+  #badge .binfo b{font-size:12px;letter-spacing:.12em;color:#a8792e;}
+  #badge .binfo span{font-size:14px;font-weight:700;color:#2c3340;}
+  #badge .binfo .bno{font-size:11px;font-weight:600;color:#8a91a0;letter-spacing:.06em;}
+  @keyframes pop{0%{transform:scale(.4) translateY(30px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+  /* ---- 온보딩 위크 UI ---- */
+  #quest{position:absolute;top:16px;right:16px;background:rgba(20,24,32,.8);border-radius:14px;
+    padding:13px 17px;min-width:210px;max-width:280px;}
+  #quest b{color:#ffd777;font-size:13.5px;letter-spacing:.02em;}
+  #quest .t{color:#dfe6ee;font-size:12.5px;font-weight:600;margin-top:7px;line-height:1.4;}
+  #quest .t.done{color:#67717f;text-decoration:line-through;}
+  #carry{position:absolute;left:16px;bottom:28px;background:rgba(20,24,32,.85);color:#ffd777;
+    padding:9px 15px;border-radius:999px;font-size:14.5px;font-weight:800;display:none;}
+  #dlg{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:min(620px,88vw);
+    background:rgba(16,19,26,.95);border-radius:16px;padding:16px 20px;display:none;
+    pointer-events:auto;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  #dlg .nm{font-weight:800;color:#7fded2;font-size:14.5px;display:inline;}
+  #dlg .hearts{color:#ff8f9e;font-size:12.5px;margin-left:8px;}
+  #dlg .tx{color:#eef2f8;font-size:14.5px;line-height:1.65;margin-top:7px;white-space:pre-wrap;}
+  #dlg .next{color:#8a91a0;font-size:11.5px;margin-top:9px;text-align:right;}
+  #dlg .choices{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  #dlg .choices button{background:#232833;border:1px solid #3a4150;color:#eef2f8;border-radius:10px;
+    padding:10px 13px;font-size:13.5px;font-weight:600;text-align:left;cursor:pointer;}
+  #dlg .choices button:hover{background:#2e3542;border-color:#7fded2;}
+  #daysum{position:absolute;inset:0;background:rgba(5,7,10,.9);display:none;flex-direction:column;
+    align-items:center;justify-content:center;pointer-events:auto;}
+  #daysum h1{color:#ffd777;font-size:44px;margin:0 0 16px;}
+  #daysum .box{background:rgba(255,255,255,.06);border-radius:14px;padding:18px 28px;
+    color:#dfe6ee;font-size:14.5px;line-height:2;text-align:center;}
+  #daysum .go{margin-top:24px;color:#7fded2;font-weight:800;font-size:15.5px;}
+  #daysum .rst{margin-top:8px;color:#6f7b8c;font-size:12px;}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="chip">WASD 이동 / E 상호작용 / 마우스 드래그 시점 / 휠 줌</div>
+  <div id="prompt"></div>
+  <div id="objective">MEOW CORP HQ, 사원증 찍고 엘베 타고 12층 우리 팀으로</div>
+  <div id="bigmsg"><h1>🎉 출근 완료!</h1><p>12층 우리 팀 도착. 오늘도 냥냥히 일해보자 🐾</p></div>
+  <div id="badge">
+    <div class="bphoto">🐱</div>
+    <div class="binfo"><b>MEOW CORP</b><span>냥냥이 · 12F 우리 팀</span><span class="bno">EMP NO. 1204</span></div>
+  </div>
+  <div id="quest"></div>
+  <div id="carry"></div>
+  <div id="dlg">
+    <span class="nm" id="dlgName"></span><span class="hearts" id="dlgHearts"></span>
+    <div class="tx" id="dlgText"></div>
+    <div class="choices" id="dlgChoices" style="display:none"></div>
+    <div class="next" id="dlgNext">E 또는 클릭으로 계속 ▸</div>
+  </div>
+  <div id="daysum">
+    <h1 id="sumTitle"></h1>
+    <div class="box" id="sumBody"></div>
+    <div class="go">E: 다음 날 출근하기</div>
+    <div class="rst">R: 처음부터 다시</div>
+  </div>
+  <div id="fade"><div id="floorNum"></div><div id="floorLbl"></div></div>
+</div>
+<script src="./three.min.js"></script>
+<script src="./GLTFLoader.js"></script>
+<script src="./kenney-assets.js"></script>
+<script>
+'use strict';
+/* ================= 기본 셋업 ================= */
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.98;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0c10);
+scene.fog = new THREE.Fog(0x0a0c10, 55, 130);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 200);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* 금속 반사용 환경맵 (작은 방을 만들어 PMREM으로 굽는다) */
+{
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const env = new THREE.Scene();
+  env.background = new THREE.Color(0x1a1c22);
+  const lightBox = (x,y,z,w,h,d,c) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshBasicMaterial({color:c}));
+    m.position.set(x,y,z); env.add(m);
+  };
+  lightBox(0, 8, 0, 6, .5, 6, 0xfff2d9);
+  lightBox(-6, 3, -6, .5, 4, 4, 0xffe0a8);
+  lightBox(6, 3, 6, .5, 4, 4, 0x9adfd6);
+  lightBox(6, 2, -6, 3, 3, .5, 0x8a6a3a);
+  scene.environment = pmrem.fromScene(env).texture;
+  pmrem.dispose();
+}
+
+/* ================= 재질/텍스처 ================= */
+const MAT = {
+  gold:   new THREE.MeshStandardMaterial({color:0xd9a94a, metalness:.95, roughness:.26}),
+  goldLit:new THREE.MeshStandardMaterial({color:0xffd98a, metalness:.4, roughness:.4, emissive:0xffc55e, emissiveIntensity:.9}),
+  silver: new THREE.MeshStandardMaterial({color:0xb8bcc4, metalness:.9, roughness:.32}),
+  bronze: new THREE.MeshStandardMaterial({color:0xa8763e, metalness:.85, roughness:.35}),
+  darkWood: new THREE.MeshStandardMaterial({color:0x2c1f14, roughness:.8}),
+  column: new THREE.MeshStandardMaterial({color:0x241a11, roughness:.75}),
+  glass:  new THREE.MeshStandardMaterial({color:0x9fd8cf, metalness:0, roughness:.08, transparent:true, opacity:.34, side:THREE.DoubleSide}),
+  tealGlass: new THREE.MeshStandardMaterial({color:0x8fe6da, metalness:0, roughness:.12, transparent:true, opacity:.45, side:THREE.DoubleSide}),
+  teal:   new THREE.MeshStandardMaterial({color:0x7fded2, emissive:0x3fbfae, emissiveIntensity:.55, roughness:.4}),
+  black:  new THREE.MeshStandardMaterial({color:0x1a1c20, roughness:.5}),
+  red:    new THREE.MeshStandardMaterial({color:0xe4574f, roughness:.45}),
+  ledRed:   new THREE.MeshStandardMaterial({color:0x661515, emissive:0xff3b30, emissiveIntensity:1.2}),
+  ledGreen: new THREE.MeshStandardMaterial({color:0x0f4d1e, emissive:0x34d158, emissiveIntensity:1.4}),
+  white:  new THREE.MeshStandardMaterial({color:0xf4f2ee, roughness:.7}),
+};
+
+function canvasTex(draw, w, h, repX, repY){
+  const c = document.createElement('canvas'); c.width = w||512; c.height = h||512;
+  draw(c.getContext('2d'), c.width, c.height);
+  const t = new THREE.CanvasTexture(c);
+  t.encoding = THREE.sRGBEncoding;
+  if (repX){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repX, repY||repX); }
+  return t;
+}
+/* 어두운 바닥 + 희미한 균열 라인 */
+const floorTex = canvasTex((g,w,h)=>{
+  g.fillStyle = '#0b0e14'; g.fillRect(0,0,w,h);
+  g.strokeStyle = 'rgba(80,100,115,.10)'; g.lineWidth = 2;
+  for (let i=0;i<46;i++){
+    g.beginPath();
+    let x = Math.random()*w, y = Math.random()*h;
+    g.moveTo(x,y);
+    const n = 2+(Math.random()*3|0);
+    for (let j=0;j<n;j++){ x += (Math.random()-.5)*180; y += (Math.random()-.5)*180; g.lineTo(x,y); }
+    g.stroke();
+  }
+}, 512, 512, 5, 5);
+/* 우드 패널 벽 */
+const woodTex = canvasTex((g,w,h)=>{
+  g.fillStyle = '#5c3f26'; g.fillRect(0,0,w,h);
+  for (let x=0;x<w;x+=86){ g.fillStyle='rgba(28,15,5,.6)'; g.fillRect(x,0,4,h); }
+  for (let i=0;i<260;i++){
+    g.fillStyle = `rgba(${60+Math.random()*40|0},${34+Math.random()*22|0},12,${.06+Math.random()*.1})`;
+    g.fillRect(Math.random()*w, Math.random()*h, 3+Math.random()*30, 2+Math.random()*5);
+  }
+}, 512, 512, 4, 2);
+const woodMat = new THREE.MeshStandardMaterial({map:woodTex, roughness:.8});
+/* 야경 창문 (12층) */
+const cityTex = canvasTex((g,w,h)=>{
+  const gr = g.createLinearGradient(0,0,0,h);
+  gr.addColorStop(0,'#060a20'); gr.addColorStop(.7,'#12204a'); gr.addColorStop(1,'#1b2f66');
+  g.fillStyle = gr; g.fillRect(0,0,w,h);
+  for (let i=0;i<700;i++){
+    g.fillStyle = Math.random()<.75 ? 'rgba(255,210,120,.85)' : 'rgba(160,220,255,.8)';
+    g.fillRect(Math.random()*w, h*.25+Math.random()*h*.75, 2+Math.random()*3, 2+Math.random()*4);
+  }
+}, 1024, 256);
+
+function textTex(text, px, color){
+  return canvasTex((g,w,h)=>{
+    g.clearRect(0,0,w,h);
+    g.font = `800 ${px}px -apple-system, "Apple SD Gothic Neo", sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = color || '#f3ede2';
+    g.fillText(text, w/2, h/2);
+  }, 2048, 384);
+}
+function textPlane(text, wWorld, hWorld, color){
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(wWorld, hWorld),
+    new THREE.MeshBasicMaterial({map:textTex(text, 250, color), transparent:true, toneMapped:false})
+  );
+  return m;
+}
+
+/* ================= 유틸 ================= */
+function box(w,h,d, mat, x,y,z, parent, shadow){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z);
+  if (shadow){ m.castShadow = true; m.receiveShadow = true; }
+  (parent||scene).add(m);
+  return m;
+}
+function cyl(rt,rb,h,seg, mat, x,y,z, parent, shadow){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||24), mat);
+  m.position.set(x,y,z);
+  if (shadow){ m.castShadow = true; m.receiveShadow = true; }
+  (parent||scene).add(m);
+  return m;
+}
+function sph(r, mat, x,y,z, parent, shadow){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 16), mat);
+  m.position.set(x,y,z);
+  if (shadow) m.castShadow = true;
+  (parent||scene).add(m);
+  return m;
+}
+
+/* ================= 캐릭터 (Kenney Cube Pets, CC0) ================= */
+function b64ToBuf(b64){
+  const s = atob(b64); const a = new Uint8Array(s.length);
+  for (let i=0;i<s.length;i++) a[i] = s.charCodeAt(i);
+  return a.buffer;
+}
+const petLoader = (()=>{
+  const mgr = new THREE.LoadingManager();
+  mgr.setURLModifier(url => url.includes('colormap') ? 'data:image/png;base64,' + PETS_B64.colormap : url);
+  return new THREE.GLTFLoader(mgr);
+})();
+const petCache = {};
+/* 이름의 동물을 지정 높이(월드 단위)로 불러온다. 발이 y=0, 정면 +z */
+function makePet(name, height, onReady){
+  const g = new THREE.Group();
+  const build = src => {
+    const m = src.clone(true);
+    const bb = new THREE.Box3().setFromObject(m);
+    const size = bb.getSize(new THREE.Vector3());
+    const s = height / size.y;
+    m.scale.setScalar(s);
+    m.position.set(-(bb.min.x+bb.max.x)/2*s, -bb.min.y*s, -(bb.min.z+bb.max.z)/2*s);
+    m.traverse(o => { if (o.isMesh){ o.castShadow = true; } });
+    g.add(m);
+    g.userData.depth = size.z*s;
+    g.userData.width = size.x*s;
+    if (onReady) onReady(g);
+  };
+  if (petCache[name]) build(petCache[name]);
+  else petLoader.parse(b64ToBuf(PETS_B64[name]), '', gl => { petCache[name] = gl.scene; build(gl.scene); },
+    e => console.warn('pet load fail', name, e));
+  return g;
+}
+
+/* ================= 로비 (1층) ================= */
+const lobby = new THREE.Group(); scene.add(lobby);
+const W = 26, BACK = -20, FRONT = 22, WALL_H = 16;
+
+{
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W*2, FRONT-BACK+4),
+    new THREE.MeshStandardMaterial({map:floorTex, roughness:.55, metalness:.15}));
+  floor.rotation.x = -Math.PI/2; floor.position.z = (FRONT+BACK)/2;
+  floor.receiveShadow = true;
+  lobby.add(floor);
+
+  // 뒷벽 (중앙에 엘리베이터 개구부)
+  box(W-2.3, WALL_H, .6, woodMat, -(W+2.3)/2, WALL_H/2, BACK-.3, lobby);
+  box(W-2.3, WALL_H, .6, woodMat,  (W+2.3)/2, WALL_H/2, BACK-.3, lobby);
+  box(4.6, WALL_H-4.4, .6, woodMat, 0, 4.4+(WALL_H-4.4)/2, BACK-.3, lobby);
+  box(.6, WALL_H, FRONT-BACK, woodMat, -W, WALL_H/2, (FRONT+BACK)/2, lobby);
+  box(.6, WALL_H, FRONT-BACK, woodMat,  W, WALL_H/2, (FRONT+BACK)/2, lobby);
+  box(W*2, .6, FRONT-BACK+4, MAT.darkWood, 0, WALL_H, (FRONT+BACK)/2, lobby); // 천장
+
+  // 기둥
+  for (const x of [-14,-6,6,14]) cyl(1.1,1.2,WALL_H,18, MAT.column, x, WALL_H/2, -13, lobby, true);
+
+  // 벽 로고
+  const logo = textPlane('MEOW CORP', 22, 4.1);
+  logo.position.set(0, 12.6, BACK+.05); lobby.add(logo);
+
+  // 선반 3단 + 금색 라인 조명 + 유리 난간 + 동물 피규어
+  const figPets = ['bunny','chick','pig','penguin','koala','monkey','deer','fox'];
+  for (const y of [5.2, 8.0, 10.8]){
+    for (const [x0,x1] of [[-24,-3],[3,24]]){
+      const cx = (x0+x1)/2, w = x1-x0;
+      box(w, .3, 1.8, MAT.darkWood, cx, y, BACK+1.1, lobby);
+      box(w, .07, .1, MAT.goldLit, cx, y+.18, BACK+2.02, lobby);       // 금색 라인
+      box(w, .8, .05, MAT.glass, cx, y+.75, BACK+2.0, lobby);          // 유리 난간
+      for (let x=x0+1.5; x<x1-1; x+=3.2){
+        cyl(.03,.03,.85,8, MAT.silver, x, y+.72, BACK+2.0, lobby);     // 난간 지주
+        if (Math.random()<.75){
+          const fig = makePet(figPets[Math.random()*figPets.length|0], .95);
+          fig.position.set(x+ (Math.random()-.5), y+.16, BACK+1.1);
+          fig.rotation.y = Math.PI*(-.2+Math.random()*.4);
+          lobby.add(fig);
+        }
+      }
+    }
+  }
+
+  // 중앙 청록 원형 플랫폼 + 골드 토러스 분수 조형물
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), new THREE.MeshStandardMaterial({
+    color:0x6fd9cc, transparent:true, opacity:.35, roughness:.15}));
+  disc.rotation.x = -Math.PI/2; disc.position.set(0,.03,-6); lobby.add(disc);
+  for (const r of [4.6, 2.7]){
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r, r+.22, 48), new THREE.MeshStandardMaterial({
+      color:0x3fae9f, transparent:true, opacity:.4}));
+    ring.rotation.x = -Math.PI/2; ring.position.set(0,.05,-6); lobby.add(ring);
+  }
+  cyl(2.0, 2.3, 1.1, 32, MAT.bronze, 0, .55, -6, lobby, true);          // 포디움
+  const stack = new THREE.Group(); stack.position.set(0,0,-6); lobby.add(stack);
+  const radii = [1.85, 1.6, 1.38, 1.16, .95, .75];
+  radii.forEach((r,i)=>{
+    const t = new THREE.Mesh(new THREE.TorusGeometry(r, .4, 16, 40), MAT.gold);
+    t.rotation.x = Math.PI/2; t.position.y = 1.9 + i*1.05; t.castShadow = true;
+    stack.add(t);
+  });
+  cyl(.1,.1,4.5,10, MAT.silver, 0, WALL_H-2.2, -6, lobby);              // 천장 봉
+  lobby.userData.stack = stack;
+
+  // 스피드게이트: 유리 낮은 벽(z=2) + 안내 데스크 + 게이트 날개
+  for (const [x0,x1] of [[-W,-2],[2,W]]){
+    box(x1-x0, 1.25, .12, MAT.glass, (x0+x1)/2, .68, 2, lobby);
+    box(x1-x0, .07, .18, MAT.gold, (x0+x1)/2, 1.33, 2, lobby);
+  }
+  const wingL = new THREE.Group(), wingR = new THREE.Group();
+  wingL.position.set(-2, 0, 2); wingR.position.set(2, 0, 2);
+  box(1.85, 1.15, .1, MAT.tealGlass, .95, .68, 0, wingL);
+  box(1.85, 1.15, .1, MAT.tealGlass, -.95, .68, 0, wingR);
+  lobby.add(wingL, wingR);
+  lobby.userData.wings = [wingL, wingR];
+
+  for (const s of [-1,1]){
+    const d = new THREE.Group(); d.position.set(s*5.6, 0, 2); lobby.add(d);
+    box(3.4, 1.15, 1.5, MAT.silver, 0, .58, 0, d, true);
+    box(3.7, .14, 1.7, MAT.gold, 0, 1.22, 0, d, true);
+    box(3.2, 1.05, .07, MAT.glass, 0, 1.85, 0, d);
+    sph(.1, MAT.red, s*.9, 1.36, .35, d);
+    sph(.1, MAT.red, s*1.2, 1.36, .3, d);
+    box(.5,.14,.3, MAT.black, s*.3, 1.36, .3, d);
+    box(.4,.12,.26, MAT.black, s*1.0, 1.34, -.25, d);
+  }
+  // 게이트 카드 리더기 (양쪽, LED 빨강 → 태그하면 초록)
+  const readerLeds = [];
+  for (const s of [-1,1]){
+    box(.42, .16, .55, MAT.black, s*2.6, 1.46, 2, lobby, true);
+    cyl(.12,.12,.05,12, MAT.gold, s*2.6, 1.56, 2, lobby);
+    const led = sph(.06, MAT.ledRed, s*2.6, 1.62, 2.15, lobby);
+    readerLeds.push(led);
+  }
+  lobby.userData.readerLeds = readerLeds;
+  // 안내 데스크 직원 (여기서 사원증을 받는다)
+  const recep = makePet('bunny', 2.0);
+  recep.position.set(-5.6, 0, 1.0); lobby.add(recep);
+  // 태그 연출용 카드
+  const tagCard = new THREE.Group(); tagCard.position.set(2.6, 2.0, 2.0);
+  tagCard.visible = false; lobby.add(tagCard);
+  box(.5, .04, .36, MAT.white, 0, 0, 0, tagCard);
+  box(.5, .05, .1, MAT.teal, 0, .01, -.12, tagCard);
+  lobby.userData.tagCard = tagCard;
+
+  box(6, 1.0, 1.6, woodMat, -11, 2.2, -10, lobby, true);                // 뒤쪽 우드 카운터
+  box(6.2, .12, 1.8, MAT.gold, -11, 2.75, -10, lobby, true);
+  const counterPet = makePet('koala', 1.1);
+  counterPet.position.set(-11, 2.8, -10); counterPet.rotation.y = -Math.PI*.1; lobby.add(counterPet);
+
+  // 나무 화분
+  const tree = new THREE.Group(); tree.position.set(-17, 0, 8); lobby.add(tree);
+  cyl(.75, .9, 1.3, 18, new THREE.MeshStandardMaterial({color:0xb98a54, roughness:.8}), 0, .65, 0, tree, true);
+  cyl(.16, .2, 1.6, 10, new THREE.MeshStandardMaterial({color:0x6e4a2a}), 0, 2.0, 0, tree, true);
+  const leaf = new THREE.MeshStandardMaterial({color:0x7ccc6e, roughness:.85});
+  sph(.85, leaf, 0, 3.2, 0, tree, true);
+  sph(.6, leaf, -.5, 2.7, .25, tree, true);
+  sph(.55, leaf, .5, 2.85, -.2, tree, true);
+
+  // 엘리베이터 (뒷벽 중앙, 개구부 + 내부 칸)
+  const ele = new THREE.Group(); ele.position.set(0, 0, BACK+.35); lobby.add(ele);
+  box(.9, 4.5, .5, MAT.bronze, -1.85, 2.25, 0, ele, true);              // 문틀
+  box(.9, 4.5, .5, MAT.bronze,  1.85, 2.25, 0, ele, true);
+  box(4.6, .9, .5, MAT.bronze, 0, 4.05, 0, ele, true);
+  const doorL = box(1.48, 3.8, .18, MAT.gold, -.75, 1.9, .28, ele, true);
+  const doorR = box(1.48, 3.8, .18, MAT.gold,  .75, 1.9, .28, ele, true);
+  // 내부 칸
+  box(4.2, .2, 2.8, MAT.silver, 0, .1, -21.65, lobby);
+  box(.2, 4.4, 2.8, MAT.silver, -2.1, 2.2, -21.65, lobby);
+  box(.2, 4.4, 2.8, MAT.silver,  2.1, 2.2, -21.65, lobby);
+  box(4.2, 4.4, .2, MAT.silver, 0, 2.2, -23.05, lobby);
+  box(4.2, .2, 2.8, MAT.darkWood, 0, 4.3, -21.65, lobby);
+  const rail = cyl(.045,.045,3.6,10, MAT.gold, 0, 1.55, -22.8, lobby);
+  rail.rotation.z = Math.PI/2;
+  const cabLight = new THREE.PointLight(0xfff2dd, .7, 8); cabLight.position.set(0, 3.9, -21.6); lobby.add(cabLight);
+  const eleSign = textPlane('▲ 12F', 1.6, .5, '#ffd777');
+  eleSign.position.set(0, 4.15, .65); ele.add(eleSign);
+  lobby.userData.doors = [doorL, doorR];
+
+  // 벽 금색 라인 조명 + 로비 조명
+  box(W*2, .08, .08, MAT.goldLit, 0, 11.9, BACK+.15, lobby);
+  for (const s of [-1,1]) box(.08, .08, FRONT-BACK, MAT.goldLit, s*(W-.15), 9.5, (FRONT+BACK)/2, lobby);
+
+  for (const x of [-9,-3,3,9]){
+    const sp = new THREE.SpotLight(0xffe6bb, .85, 40, .3, .55, 1.2);
+    sp.position.set(x, WALL_H-1, 9);
+    sp.target.position.set(x*1.1, 0, 8);
+    lobby.add(sp, sp.target);
+  }
+  const p1 = new THREE.PointLight(0xffd9a0, .7, 30); p1.position.set(0, 9, -6); lobby.add(p1);
+  const p2 = new THREE.PointLight(0x9adfd6, .35, 20); p2.position.set(0, 3, 0); lobby.add(p2);
+}
+
+/* ================= 바깥 풍경 (Kenney Modular Buildings, CC0) ================= */
+{
+  // 정면 유리 파사드 (로비 앞쪽)
+  box(W*2, 13, .16, MAT.glass, 0, 6.5, FRONT, lobby);
+  box(W*2, .5, .5, MAT.bronze, 0, 13.2, FRONT, lobby);
+  for (let x=-W; x<=W; x+=6.5) box(.22, 13, .3, MAT.bronze, x, 6.5, FRONT, lobby);
+  box(W*2, .35, .35, MAT.gold, 0, .25, FRONT, lobby);
+
+  const outdoor = new THREE.Group(); lobby.add(outdoor);
+  // 지면 / 인도 / 도로
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 70),
+    new THREE.MeshStandardMaterial({color:0x191c22, roughness:.95}));
+  ground.rotation.x = -Math.PI/2; ground.position.set(0, -.02, FRONT+35); outdoor.add(ground);
+  box(160, .14, 7, new THREE.MeshStandardMaterial({color:0x33363e, roughness:.9}), 0, .07, FRONT+3.8, outdoor);
+  box(160, .1, 8, new THREE.MeshStandardMaterial({color:0x101318, roughness:.85}), 0, .05, FRONT+11.5, outdoor);
+  for (let x=-72; x<80; x+=7)                                            // 차선
+    box(2.6, .02, .32, new THREE.MeshStandardMaterial({color:0xd8d5c8, roughness:.8}), x, .12, FRONT+11.5, outdoor);
+  // 가로등
+  for (const x of [-30,-10,10,30]){
+    cyl(.09,.12,5.6,8, MAT.black, x, 2.8, FRONT+6.4, outdoor);
+    sph(.28, MAT.goldLit, x, 5.7, FRONT+6.4, outdoor);
+  }
+  const sl1 = new THREE.PointLight(0xffc97a, .55, 20); sl1.position.set(-10, 5.7, FRONT+6.4); outdoor.add(sl1);
+  const sl2 = new THREE.PointLight(0xffc97a, .55, 20); sl2.position.set(10, 5.7, FRONT+6.4); outdoor.add(sl2);
+
+  // Kenney 샘플 건물 배치 (도로 건너편 + 좌우)
+  const mgr = new THREE.LoadingManager();
+  mgr.setURLModifier(url => url.includes('colormap') ? 'data:image/png;base64,' + KENNEY_B64.colormap : url);
+  const gltfLoader = new THREE.GLTFLoader(mgr);
+  const SPECS = [   // [모델, x, z, 회전, 스케일]
+    ['towerA', -38, FRONT+27, 0, 4.4],
+    ['houseB', -20, FRONT+24, 0, 4.0],
+    ['towerC',  -2, FRONT+28, 0, 4.6],
+    ['houseA',  15, FRONT+24, 0, 3.8],
+    ['towerD',  34, FRONT+27, 0, 4.4],
+    ['houseC', -52, FRONT+16, Math.PI/2, 3.8],
+    ['towerB',  52, FRONT+14, -Math.PI/2, 4.2],
+  ];
+  for (const [key, x, z, ry, s] of SPECS){
+    gltfLoader.parse(b64ToBuf(KENNEY_B64[key]), '', g => {
+      const m = g.scene;
+      m.scale.setScalar(s);
+      m.rotation.y = ry + Math.PI;               // 정면이 회사 쪽을 보게
+      m.position.set(x, 0, z);
+      outdoor.add(m);
+    }, e => console.warn('kenney load fail', key, e));
+  }
+}
+
+/* ================= NPC 정의 (온보딩 지식 포함) ================= */
+const NPCS = [
+  {species:'dog', name:'보리', emoji:'🐶', role:'디자이너',
+   intro:['안녕! 난 디자이너 보리야 🎨 만나서 반가워!',
+          '우리 회사 브랜드 컬러는 "청록 + 골드"야. 로비 가봤지? 온통 그 색이잖아~',
+          '디자인 요청은 언제든 환영이야. 참, 이건 시험에 나올지도? 🐾'],
+   small:['오늘 컨디션 최고야! 🎨','시안 3개 그리는 중~ 청록+골드는 진리야.','냥냥이 털 색 완전 예쁘다~']},
+  {species:'fox', name:'여울', emoji:'🦊', role:'시니어 개발자',
+   intro:['난 여울. 개발 담당이야.',
+          '중요한 거 하나만 기억해 — 배포는 매주 "목요일"이야. 금요일 배포는 금지. 주말을 지키자.',
+          '코드 궁금한 건 언제든 물어봐.'],
+   small:['리팩토링 중... 건들지 마.','목요일 배포 준비 끝. 완벽해.','커피가 코드 품질을 만든다.']},
+  {species:'panda', name:'판돌', emoji:'🐼', role:'프로덕트 매니저',
+   intro:['반가워요, PM 판돌입니다.',
+          '우리 팀 스프린트는 "2주" 단위로 돌아요. 월요일 플래닝, 금요일 회고.',
+          '온보딩 끝나면 제가 간단한 퀴즈를 낼 거예요. 잘 들어두세요~ 😏'],
+   small:['일정 정리 중이에요. 1) 회의 2) 회의 3) 회의...','스프린트는 2주! 잊지 마세요.','우선순위가 전부예요.']},
+  {species:'penguin', name:'핑고', emoji:'🐧', role:'QA 엔지니어',
+   intro:['아... 안녕하세요, QA 핑고예요.',
+          '버그를 발견하면 꼭 "MEOWTRACK"에 티켓으로 올려주세요. 이메일로 보내면... 잃어버려요.',
+          '엣지 케이스는 언제나 우리 생각보다 많아요...'],
+   small:['방금 버그 3개 찾았어요... 하아.','MEOWTRACK 확인하셨어요?','빈 입력값 테스트 해보셨나요...?']},
+  {species:'tiger', name:'호진', emoji:'🐯', role:'데이터 분석가',
+   intro:['어이 신입! 데이터의 호진이다.',
+          '모든 지표는 우리 대시보드 "MEOWBOARD"에 있어. 숫자로 말하고 숫자로 듣는 거야.',
+          '감이 아니라 데이터. 알겠지? 🐯'],
+   small:['오늘 DAU가 12% 올랐어. 내 덕이지.','MEOWBOARD 열어봐. 아름답다.','A/B 테스트는 B가 이겼어. 역시.']},
+];
+const npcByName = {};
+for (const n of NPCS) npcByName[n.name] = n;
+
+/* ================= 사무실 (12층) ================= */
+const office = new THREE.Group(); office.visible = false; scene.add(office);
+const coworkers = [];
+{
+  const OW = 17, OD = 12, OH = 6.2;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(OW*2, OD*2),
+    new THREE.MeshStandardMaterial({color:0xcbb392, roughness:.75}));
+  floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; office.add(floor);
+
+  const wallMat = new THREE.MeshStandardMaterial({color:0xe9e4da, roughness:.9});
+  // 뒷벽(엘베 쪽, 중앙에 개구부)
+  box(OW-2.3, OH, .4, wallMat, -(OW+2.3)/2, OH/2, OD, office);
+  box(OW-2.3, OH, .4, wallMat,  (OW+2.3)/2, OH/2, OD, office);
+  box(4.6, OH-4.4, .4, wallMat, 0, 4.4+(OH-4.4)/2, OD, office);
+  // 엘리베이터 내부 칸 (12층)
+  box(4.2, .2, 2.6, MAT.silver, 0, .1, OD+1.5, office);
+  box(.2, 4.4, 2.6, MAT.silver, -2.1, 2.2, OD+1.5, office);
+  box(.2, 4.4, 2.6, MAT.silver,  2.1, 2.2, OD+1.5, office);
+  box(4.2, 4.4, .2, MAT.silver, 0, 2.2, OD+2.7, office);
+  box(4.2, .2, 2.6, MAT.darkWood, 0, 4.3, OD+1.5, office);
+  const oRail = cyl(.045,.045,3.6,10, MAT.gold, 0, 1.55, OD+2.55, office);
+  oRail.rotation.z = Math.PI/2;
+  const oCabLight = new THREE.PointLight(0xfff2dd, .7, 8); oCabLight.position.set(0, 3.9, OD+1.5); office.add(oCabLight);
+  box(.4, OH, OD*2, wallMat, -OW, OH/2, 0, office);
+  box(.4, OH, OD*2, wallMat,  OW, OH/2, 0, office);
+  box(OW*2, .4, OD*2, new THREE.MeshStandardMaterial({color:0xf2efe9}), 0, OH, 0, office);
+
+  // 창문 벽 (야경)
+  box(OW*2, OH, .3, MAT.black, 0, OH/2, -OD, office);
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(OW*2-1, OH-1.2),
+    new THREE.MeshBasicMaterial({map:cityTex, toneMapped:false}));
+  win.position.set(0, OH/2, -OD+.2); office.add(win);
+  for (let x=-OW+3.4; x<OW; x+=3.4) box(.1, OH-1.2, .1, MAT.black, x, OH/2, -OD+.25, office);
+
+  // 엘리베이터(도착층, 개구부 문틀)
+  const ele = new THREE.Group(); ele.position.set(0, 0, OD-.25); ele.rotation.y = Math.PI; office.add(ele);
+  box(.9, 4.5, .5, MAT.bronze, -1.85, 2.25, 0, ele, true);
+  box(.9, 4.5, .5, MAT.bronze,  1.85, 2.25, 0, ele, true);
+  box(4.6, .9, .5, MAT.bronze, 0, 4.05, 0, ele, true);
+  const dL = box(1.48, 3.8, .18, MAT.gold, -.75, 1.9, .28, ele, true);
+  const dR = box(1.48, 3.8, .18, MAT.gold,  .75, 1.9, .28, ele, true);
+  office.userData.doors = [dL, dR];
+
+  const sign = textPlane('MEOW CORP · 12F 우리 팀', 10, 1.3, '#5a4a32');
+  sign.position.set(-9, 4.6, OD-.05); sign.rotation.y = Math.PI; office.add(sign);
+
+  // 책상들 (2줄 x 3), 마지막 하나가 내 자리
+  const deskTop = new THREE.MeshStandardMaterial({color:0xf5f2ec, roughness:.6});
+  const legMat = new THREE.MeshStandardMaterial({color:0x8f9299, metalness:.6, roughness:.4});
+  const screenMat = new THREE.MeshStandardMaterial({color:0x0e2e34, emissive:0x2fd2c0, emissiveIntensity:.7});
+  let ci = 0;
+  for (const z of [-4.5, 1.5]){
+    for (const x of [-8, 0, 8]){
+      const d = new THREE.Group(); d.position.set(x, 0, z); office.add(d);
+      box(3.1, .12, 1.5, deskTop, 0, 1.06, 0, d, true);
+      for (const [lx,lz] of [[-1.4,.6],[1.4,.6],[-1.4,-.6],[1.4,-.6]])
+        box(.1, 1.0, .1, legMat, lx, .5, lz, d);
+      box(1.5, .9, .08, MAT.black, 0, 1.68, -.45, d, true);             // 모니터
+      const sc = box(1.34, .74, .02, screenMat, 0, 1.68, -.4, d);
+      box(.12, .5, .12, MAT.black, 0, 1.2, -.45, d);
+      cyl(.5, .55, .16, 18, MAT.black, 0, .5, 1.25, d);                 // 의자
+      cyl(.07,.07,.5,10, legMat, 0, .25, 1.25, d);
+      box(.9, .8, .12, MAT.black, 0, 1.05, 1.7, d);
+      const mine = (x===8 && z===1.5);
+      if (!mine){
+        const n = NPCS[ci++];
+        n.pet = makePet(n.species, 1.75);
+        n.pet.position.set(x, .52, z+1.25);
+        n.pet.rotation.y = Math.PI;                                      // 모니터(-z) 쪽 보기
+        n.home = {x, z: z+1.25};
+        office.add(n.pet);
+        coworkers.push(n.pet);
+      } else {
+        sc.material = new THREE.MeshStandardMaterial({color:0x0e2e34, emissive:0xffc55e, emissiveIntensity:.65});
+      }
+    }
+  }
+
+  // 화분, 러그
+  const tree = new THREE.Group(); tree.position.set(-14.5, 0, 9); office.add(tree);
+  cyl(.6,.72,1.0,16, new THREE.MeshStandardMaterial({color:0xb98a54}), 0,.5,0, tree, true);
+  const leaf = new THREE.MeshStandardMaterial({color:0x7ccc6e, roughness:.85});
+  cyl(.12,.15,1.4,8, new THREE.MeshStandardMaterial({color:0x6e4a2a}), 0,1.6,0, tree);
+  sph(.7, leaf, 0, 2.6, 0, tree, true);
+  sph(.5, leaf, -.4, 2.2, .2, tree, true);
+  const rug = new THREE.Mesh(new THREE.CircleGeometry(3.4, 36),
+    new THREE.MeshStandardMaterial({color:0x6fd9cc, transparent:true, opacity:.5}));
+  rug.rotation.x = -Math.PI/2; rug.position.set(0,.02,7); office.add(rug);
+
+  // 탕비실 (오른쪽 벽, 커피머신)
+  const kitchen = new THREE.Group(); kitchen.position.set(15.2, 0, 8); office.add(kitchen);
+  box(1.6, 1.1, 3.2, new THREE.MeshStandardMaterial({color:0x8a6a4a, roughness:.7}), 0, .55, 0, kitchen, true);
+  box(1.7, .1, 3.3, MAT.gold, 0, 1.14, 0, kitchen);
+  const coffeeMachine = new THREE.Group(); coffeeMachine.position.set(0, 1.2, .6); kitchen.add(coffeeMachine);
+  box(.8, 1.0, .9, MAT.black, 0, .5, 0, coffeeMachine, true);
+  box(.7, .25, .2, MAT.silver, 0, .55, .5, coffeeMachine);
+  sph(.06, MAT.ledRed, -.2, .85, .46, coffeeMachine);
+  sph(.06, MAT.ledGreen, 0, .85, .46, coffeeMachine);
+  cyl(.09,.07,.14,10, MAT.white, 0, .1, .38, coffeeMachine);            // 컵
+  cyl(.09,.07,.14,10, MAT.white, .25, 1.05, -.2, coffeeMachine);
+  cyl(.09,.07,.14,10, MAT.white, -.25, 1.05, -.2, coffeeMachine);
+  const kettle = textPlane('☕ 탕비실', 2.4, .5, '#8a6a4a');
+  kettle.position.set(-.86, 2.2, 0); kettle.rotation.y = -Math.PI/2; office.add(kettle);
+  kettle.position.x = 14.2; kettle.position.z = 8;
+
+  // 복사기 (왼쪽 벽)
+  const copier = new THREE.Group(); copier.position.set(-15.2, 0, -6); office.add(copier);
+  box(1.3, 1.05, 1.7, new THREE.MeshStandardMaterial({color:0xc9cdd4, roughness:.5}), 0, .53, 0, copier, true);
+  box(1.1, .18, 1.3, new THREE.MeshStandardMaterial({color:0x9aa0a8}), 0, 1.14, 0, copier);
+  box(.9, .05, .6, MAT.white, .1, .8, .95, copier);                     // 종이 트레이
+  const copierLed = sph(.07, MAT.ledRed, 0, 1.28, .5, copier);
+  office.userData.copier = copier;
+  office.userData.copierLed = copierLed;
+
+  // 코너 오피스 (창가 구석, 승진 보상)
+  const corner = new THREE.Group(); corner.position.set(13.8, 0, -9.2); office.add(corner);
+  box(3.6, .14, 1.6, new THREE.MeshStandardMaterial({color:0x6a4a2c, roughness:.5}), 0, 1.1, 0, corner, true);
+  box(3.8, .06, 1.7, MAT.gold, 0, 1.19, 0, corner);
+  for (const [lx,lz] of [[-1.6,.6],[1.6,.6],[-1.6,-.6],[1.6,-.6]])
+    box(.12, 1.05, .12, MAT.gold, lx, .52, lz, corner);
+  box(1.3, .8, .07, MAT.black, -.7, 1.66, -.4, corner, true);           // 듀얼 모니터
+  box(1.3, .8, .07, MAT.black, .7, 1.66, -.4, corner, true);
+  box(1.2, .66, .02, new THREE.MeshStandardMaterial({color:0x0e2e34, emissive:0xffc55e, emissiveIntensity:.6}), -.7, 1.66, -.36, corner);
+  box(1.2, .66, .02, new THREE.MeshStandardMaterial({color:0x0e2e34, emissive:0x2fd2c0, emissiveIntensity:.6}), .7, 1.66, -.36, corner);
+  cyl(.55, .6, .18, 18, new THREE.MeshStandardMaterial({color:0x3a2c1c, roughness:.4}), 0, .55, 1.15, corner);
+  box(1.0, .95, .14, new THREE.MeshStandardMaterial({color:0x3a2c1c, roughness:.4}), 0, 1.15, 1.62, corner, true);
+  const crownSign = textPlane('👑 CORNER OFFICE', 3.4, .45, '#d9a94a');
+  crownSign.position.set(13.8, 3.2, -11.8); office.add(crownSign);
+
+  // 밝은 사무실 조명
+  const a = new THREE.PointLight(0xfff2dd, .6, 40); a.position.set(0, 5.4, 0); office.add(a);
+  const b = new THREE.PointLight(0xfff2dd, .4, 30); b.position.set(-10, 5.2, 4); office.add(b);
+  const c = new THREE.PointLight(0xfff2dd, .4, 30); c.position.set(10, 5.2, -4); office.add(c);
+}
+
+/* ================= 전역 조명 ================= */
+scene.add(new THREE.AmbientLight(0xbfc8d8, .22));
+scene.add(new THREE.HemisphereLight(0xcfd8e8, 0x201810, .2));
+const sun = new THREE.DirectionalLight(0xffeecc, .6);
+sun.position.set(10, 22, 12);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
+sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+
+/* ================= 플레이어 & 마커 ================= */
+// 목에 거는 사원증 (받기 전엔 숨김) — 펫 로드 후 몸 앞면에 맞춰 붙인다
+const badge3d = new THREE.Group(); badge3d.visible = false;
+{
+  const strap = cyl(.025,.025,.5,6, MAT.black, 0, .34, -.06, badge3d);
+  strap.rotation.x = .5;
+  const card = box(.3,.4,.04, MAT.white, 0, 0, 0, badge3d);
+  card.rotation.x = -.1;
+  const stripe = box(.3,.1,.05, MAT.teal, 0, .15, .005, badge3d);
+  stripe.rotation.x = -.1;
+}
+const player = makePet('cat', 2.2, g => {
+  // 사원증은 옆구리(오른쪽 옆면)에 부착
+  badge3d.position.set(g.userData.width/2 + .04, .95, .1);
+  badge3d.rotation.y = Math.PI/2;
+  g.add(badge3d);
+});
+player.position.set(0, 0, 12);
+player.rotation.y = Math.PI;
+scene.add(player);
+
+const marker = new THREE.Group(); scene.add(marker);
+{
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(.55, 1.0, 3), MAT.teal);
+  cone.rotation.x = Math.PI; cone.position.y = .8; marker.add(cone);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.12,20), MAT.teal);
+  marker.add(disc);
+  marker.userData.cone = cone;
+}
+marker.position.set(0, 2.6, 2.6);
+
+/* ================= 게임 상태 ================= */
+const promptEl = document.getElementById('prompt');
+const objectiveEl = document.getElementById('objective');
+const fadeEl = document.getElementById('fade');
+const floorNumEl = document.getElementById('floorNum');
+const floorLblEl = document.getElementById('floorLbl');
+const bigmsgEl = document.getElementById('bigmsg');
+
+let stage = 'badge';         // badge -> gate -> elevator -> desk -> done
+let busy = false;
+let gateT = 0, tagT = 0;     // 게이트 날개 / 카드 태그 연출 진행도
+let lobbyDoorT = 0, lobbyDoorTarget = 0;   // 엘베 문 (0 닫힘, 1 열림)
+let officeDoorT = 0, officeDoorTarget = 0;
+let inOffice = false;
+let satOnce = false;         // 한 번 출근 완료했는지
+let cut = null;              // 컷신 자동 걷기
+
+const OBJECTIVES = {
+  badge: '먼저 안내 데스크에서 사원증을 받자',
+  gate: '사원증을 리더기에 태그하고 게이트 통과',
+  elevator: '엘리베이터를 타고 12층 우리 팀으로',
+  desk: '12층 도착! 창가 쪽 내 자리를 찾아 앉자',
+  done: '출근 완료! 오늘도 냥냥히 일해보자 🐾',
+  free: '출근 완료! 엘리베이터를 타면 1층으로 내려갈 수 있어 🐾',
+};
+const INTERACTS = {
+  badge:    {x:-5.6, z:3.8, r:2.5, label:'E: 사원증 받기', markPos:[-5.6,2.7,2.6]},
+  gate:     {x:0, z:3.4,  r:2.6, label:'E: 사원증 태그하고 출입', markPos:[0,2.6,2.6]},
+  elevator: {x:0, z:-17.6,r:2.8, label:'E: 엘리베이터 타고 12층으로', markPos:[0,4.9,-18.2]},
+  desk:     {x:8, z:3.4,  r:2.6, label:'E: 내 자리에 앉기 (출근 완료)', markPos:[8,3.1,2.8]},
+  free:     {x:0, z:9.4,  r:2.8, label:'E: 퇴근하기 (엘리베이터)', markPos:[0,4.9,9.2]},
+};
+
+function walkTo(x, z, dur, then){
+  cut = {fx:player.position.x, fz:player.position.z, tx:x, tz:z, t:0, dur, then};
+  heading = Math.atan2(x - player.position.x, z - player.position.z);
+  player.rotation.y = heading;
+}
+
+function setStage(s){
+  stage = s;
+  objectiveEl.textContent = OBJECTIVES[s];
+  const it = INTERACTS[s];
+  if (it){ marker.visible = true; marker.position.set(...it.markPos); }
+  else marker.visible = false;
+  if (s === 'free') updateMission();               // 사무실 미션 안내로 덮어쓰기
+}
+
+/* 짧은 비프음 (사원증 태그) */
+let audioCtx = null;
+function beep(freq, t0, dur){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), gn = audioCtx.createGain();
+    o.frequency.value = freq; o.type = 'sine';
+    gn.gain.setValueAtTime(.12, audioCtx.currentTime + t0);
+    gn.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + t0 + dur);
+    o.connect(gn).connect(audioCtx.destination);
+    o.start(audioCtx.currentTime + t0); o.stop(audioCtx.currentTime + t0 + dur + .05);
+  }catch(e){}
+}
+
+function rideElevator(){
+  busy = true;
+  promptEl.style.display = 'none';
+  marker.visible = false;
+  beep(700, 0, .1);
+  lobbyDoorTarget = 1;                            // 문 열림
+  setTimeout(()=> walkTo(0, -21.2, 1.5, ()=>{     // 칸 안으로 걸어 들어감
+    lobbyDoorTarget = 0;                          // 문 닫힘
+    setTimeout(()=>{
+      fadeEl.style.opacity = 1;
+      floorLblEl.textContent = '올라가는 중…';
+      let f = 1;
+      floorNumEl.textContent = '1F';
+      const iv = setInterval(()=>{
+        f++;
+        floorNumEl.textContent = f + 'F';
+        beep(520 + f*14, 0, .05);
+        if (f >= 12){
+          clearInterval(iv);
+          floorLblEl.textContent = '12층 · 우리 팀';
+          setTimeout(()=>{
+            lobby.visible = false;
+            office.visible = true;
+            inOffice = true;
+            player.position.set(0, 0, 13.4);      // 12층 엘베 칸 안에서 시작
+            player.rotation.y = Math.PI; heading = Math.PI;
+            camYaw = 0; camPitch = .3; camDist = 7;
+            officeDoorTarget = 1;                 // 12층 문 열림
+            fadeEl.style.opacity = 0;
+            setTimeout(()=>{
+              floorNumEl.textContent = ''; floorLblEl.textContent = '';
+              walkTo(0, 6.0, 1.4, ()=>{           // 내려서 걸어 나옴
+                officeDoorTarget = 0;
+                setStage(satOnce ? 'free' : 'desk');
+                busy = false;
+              });
+            }, 600);
+          }, 650);
+        }
+      }, 110);
+    }, 1200);
+  }), 950);
+}
+
+function rideDown(){
+  busy = true;
+  promptEl.style.display = 'none';
+  marker.visible = false;
+  beep(700, 0, .1);
+  officeDoorTarget = 1;                           // 12층 문 열림
+  setTimeout(()=> walkTo(0, 13.5, 1.5, ()=>{      // 칸 안으로 걸어 들어감
+    officeDoorTarget = 0;
+    setTimeout(()=>{
+      fadeEl.style.opacity = 1;
+      floorLblEl.textContent = '내려가는 중…';
+      let f = 12;
+      floorNumEl.textContent = '12F';
+      const iv = setInterval(()=>{
+        f--;
+        floorNumEl.textContent = f + 'F';
+        beep(520 + f*14, 0, .05);
+        if (f <= 1){
+          clearInterval(iv);
+          floorLblEl.textContent = '1층 · 로비';
+          setTimeout(()=>{
+            office.visible = false;
+            lobby.visible = true;
+            inOffice = false;
+            player.position.set(0, 0, -21.2);     // 1층 엘베 칸 안에서 시작
+            player.rotation.y = 0; heading = 0;
+            camYaw = Math.PI; camPitch = .3; camDist = 8;
+            lobbyDoorTarget = 1;                  // 1층 문 열림
+            fadeEl.style.opacity = 0;
+            setTimeout(()=>{
+              floorNumEl.textContent = ''; floorLblEl.textContent = '';
+              walkTo(0, -15.5, 1.3, ()=>{         // 로비로 걸어 나옴 → 하루 마감
+                lobbyDoorTarget = 0;
+                showDaySummary();
+              });
+            }, 600);
+          }, 650);
+        }
+      }, 110);
+    }, 1200);
+  }), 950);
+}
+
+function doInteract(){
+  const it = INTERACTS[stage];
+  if (!it) return;
+  const dx = player.position.x - it.x, dz = player.position.z - it.z;
+  if (dx*dx + dz*dz > it.r*it.r) return;
+  if (stage === 'badge'){
+    beep(660, 0, .08); beep(990, .09, .1);
+    document.getElementById('badge').style.display = 'flex';
+    badge3d.visible = true;
+    setStage('gate');
+  } else if (stage === 'gate'){
+    busy = true;
+    promptEl.style.display = 'none';
+    lobby.userData.tagCard.visible = true;        // 카드 태그 연출
+    tagT = .001;
+    beep(880, .2, .09); beep(1320, .32, .12);
+    setTimeout(()=>{
+      for (const led of lobby.userData.readerLeds) led.material = MAT.ledGreen;
+      lobby.userData.tagCard.visible = false;
+      gateT = .001;
+      setStage('elevator');
+      busy = false;
+    }, 800);
+  } else if (stage === 'elevator'){
+    rideElevator();
+  } else if (stage === 'free'){
+    if (tasksLeft().length && !(ended || day > 3)){
+      say(null, ['아직 오늘 할 일이 남았다! 우상단 체크리스트를 확인하자.']);
+    } else rideDown();
+  } else if (stage === 'desk'){
+    player.position.set(8, .5, 2.75);
+    player.rotation.y = Math.PI;
+    satOnce = true;
+    taskDone('sit');
+    setBigmsg('🎉 출근 완료!', '12층 우리 팀 도착. 이제 팀원들에게 인사하러 가자 🐾');
+    setStage('done');
+    promptEl.style.display = 'none';
+    bigmsgEl.style.display = 'block';
+    beep(660,0,.12); beep(880,.13,.12); beep(1100,.26,.2);
+    setTimeout(()=>{ bigmsgEl.style.display='none'; setStage('free'); }, 4200);
+  }
+}
+
+/* ================= 온보딩 위크: 하루/미션/대화 ================= */
+let day = +(localStorage.getItem('meow_day') || 1);
+let hearts = JSON.parse(localStorage.getItem('meow_hearts') || '{}');
+let ended = localStorage.getItem('meow_end') === '1';
+let tasks = [];
+let coffees = 0, copierHits = 0, promoted = false, finalIdx = 0;
+let dlgOpen = false, sumOpen = false;
+let dlgLines = [], dlgIdx = 0, dlgNpc = null, dlgOnEnd = null, dlgChoiceSet = null;
+const dlgEl = document.getElementById('dlg');
+const questEl = document.getElementById('quest');
+const carryEl = document.getElementById('carry');
+const daysumEl = document.getElementById('daysum');
+
+function saveGame(){
+  localStorage.setItem('meow_day', day);
+  localStorage.setItem('meow_hearts', JSON.stringify(hearts));
+  if (ended) localStorage.setItem('meow_end', '1');
+}
+function resetGame(){
+  localStorage.removeItem('meow_day');
+  localStorage.removeItem('meow_hearts');
+  localStorage.removeItem('meow_end');
+  location.reload();
+}
+function setBigmsg(t, s){
+  bigmsgEl.querySelector('h1').textContent = t;
+  bigmsgEl.querySelector('p').textContent = s;
+}
+
+function setupDay(){
+  coffees = 0; copierHits = 0; promoted = false; finalIdx = 0;
+  updateCarry();
+  if (ended || day > 3){
+    tasks = [{id:'chill', label:'자유 출근 — 편하게 지내기', done:true}];
+  } else if (day === 1){
+    tasks = [
+      {id:'sit', label:'내 자리에 앉기', done:false},
+      ...NPCS.map(n => ({id:'greet_'+n.name, label:`${n.emoji} ${n.name}에게 인사하기`, done:false})),
+    ];
+  } else if (day === 2){
+    tasks = [
+      {id:'coffee', label:'☕ 탕비실에서 커피 5잔 담기', done:false},
+      ...NPCS.map(n => ({id:'give_'+n.name, label:`${n.emoji} ${n.name}에게 커피 주기`, done:false})),
+      {id:'quiz', label:'🐼 판돌의 깜짝 퀴즈 풀기', done:false},
+    ];
+  } else {
+    tasks = [
+      {id:'copier', label:'🛠 고장 난 복사기 고치기', done:false},
+      {id:'finalquiz', label:'🐼 판돌의 최종 퀴즈 (3문제)', done:false},
+      {id:'crown', label:'👑 코너 오피스에 앉기', done:false},
+    ];
+  }
+  renderQuest();
+}
+const tasksLeft = () => tasks.filter(t => !t.done);
+function taskDone(id){
+  const tk = tasks.find(t => t.id === id);
+  if (!tk || tk.done) return;
+  tk.done = true;
+  beep(980, 0, .07);
+  renderQuest();
+  updateMission();
+}
+function renderQuest(){
+  const title = (ended || day > 3) ? `DAY ${day} · 자유 출근` : `DAY ${day} / 3 · 온보딩 위크`;
+  questEl.innerHTML = `<b>${title}</b>` + tasks.map(t =>
+    `<div class="t ${t.done?'done':''}">${t.done?'✅':'⬜'} ${t.label}</div>`).join('');
+}
+function updateCarry(){
+  carryEl.style.display = coffees > 0 ? 'block' : 'none';
+  carryEl.textContent = '☕ × ' + coffees;
+}
+
+function markerTo(x, y, z){ marker.visible = true; marker.position.set(x, y, z); }
+function updateMission(){
+  if (!inOffice || (stage !== 'free' && stage !== 'done')) return;
+  const left = tasksLeft();
+  let text, tgt;
+  if (!left.length){
+    text = '오늘 할 일 끝! 엘리베이터로 퇴근하자';
+    tgt = [0, 4.9, 9.2];
+  } else {
+    const tk = left[0];
+    if (tk.id.startsWith('greet_')){
+      const n = npcByName[tk.id.slice(6)];
+      text = '팀원들에게 인사하자 — 다음: ' + n.name;
+      tgt = [n.home.x, 3.1, n.home.z];
+    } else if (tk.id === 'coffee'){ text = '오른쪽 벽 탕비실에서 커피를 담자'; tgt = [15, 2.8, 8]; }
+    else if (tk.id.startsWith('give_')){
+      const n = npcByName[tk.id.slice(5)];
+      text = '커피 배달 — 다음: ' + n.name;
+      tgt = [n.home.x, 3.1, n.home.z];
+    } else if (tk.id === 'quiz' || tk.id === 'finalquiz'){
+      const n = npcByName['판돌'];
+      text = '판돌에게 가서 퀴즈를 풀자';
+      tgt = [n.home.x, 3.1, n.home.z];
+    } else if (tk.id === 'copier'){ text = '왼쪽 벽의 복사기를 고치자 (E 3번)'; tgt = [-14.6, 2.8, -6]; }
+    else if (tk.id === 'crown'){ text = '승진! 창가 코너 오피스에 앉자'; tgt = [13.8, 3.4, -8]; }
+    else { text = '오늘 할 일을 확인하자'; tgt = null; }
+  }
+  objectiveEl.textContent = `(DAY ${day}) ` + text;
+  if (tgt) markerTo(...tgt);
+}
+
+/* ---- 대화 박스 ---- */
+function say(npc, lines, opts){
+  dlgOpen = true; dlgNpc = npc;
+  dlgLines = Array.isArray(lines) ? lines : [lines];
+  dlgIdx = 0;
+  dlgOnEnd = (opts && opts.onEnd) || null;
+  dlgChoiceSet = (opts && opts.choices) || null;
+  dlgEl.style.display = 'block';
+  promptEl.style.display = 'none';
+  renderDlgLine();
+}
+function renderDlgLine(){
+  document.getElementById('dlgName').textContent = dlgNpc ? `${dlgNpc.emoji} ${dlgNpc.name} · ${dlgNpc.role}` : '📢 안내';
+  document.getElementById('dlgHearts').textContent = dlgNpc ? '❤️'.repeat(hearts[dlgNpc.name]||0) : '';
+  document.getElementById('dlgText').textContent = dlgLines[dlgIdx];
+  const last = dlgIdx === dlgLines.length - 1;
+  const ch = document.getElementById('dlgChoices');
+  if (last && dlgChoiceSet){
+    ch.style.display = 'flex';
+    ch.innerHTML = '';
+    document.getElementById('dlgNext').style.display = 'none';
+    dlgChoiceSet.options.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.textContent = (i+1) + '. ' + opt;
+      b.onclick = ev => { ev.stopPropagation(); pickChoice(i); };
+      ch.appendChild(b);
+    });
+  } else {
+    ch.style.display = 'none';
+    document.getElementById('dlgNext').style.display = 'block';
+  }
+}
+function advanceDlg(){
+  if (dlgChoiceSet && dlgIdx === dlgLines.length - 1) return;          // 선택지 대기 중
+  if (dlgIdx < dlgLines.length - 1){ dlgIdx++; renderDlgLine(); return; }
+  closeDlg();
+}
+function closeDlg(){
+  dlgEl.style.display = 'none';
+  dlgOpen = false;
+  const fn = dlgOnEnd;
+  dlgOnEnd = null; dlgChoiceSet = null;
+  if (fn) fn();
+}
+function pickChoice(i){
+  const cs = dlgChoiceSet;
+  dlgChoiceSet = null;
+  if (i === cs.answer){
+    beep(880,0,.08); beep(1180,.1,.1);
+    dlgLines = [cs.right]; dlgIdx = 0;
+    if (cs.onRight) dlgOnEnd = cs.onRight;
+  } else {
+    beep(200,0,.2);
+    dlgLines = [cs.wrong]; dlgIdx = 0;
+  }
+  renderDlgLine();
+}
+dlgEl.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') advanceDlg(); });
+daysumEl.addEventListener('click', () => nextMorning());
+
+/* ---- NPC 대화 (온보딩 투어 + 호감도) ---- */
+function npcTalk(n){
+  const greetId = 'greet_' + n.name, giveId = 'give_' + n.name;
+  if (day === 1 && tasks.some(t => t.id === greetId && !t.done)){
+    say(n, n.intro, {onEnd: () => taskDone(greetId)});
+    return;
+  }
+  if (day === 2 && !ended){
+    const giveTk = tasks.find(t => t.id === giveId);
+    if (coffees > 0 && giveTk && !giveTk.done){
+      coffees--; updateCarry();
+      hearts[n.name] = (hearts[n.name]||0) + 1; saveGame();
+      say(n, ['☕ 오! 고마워 신입, 딱 필요했는데!', `(❤️ ${n.name}의 호감도가 올랐다!)`], {onEnd: () => taskDone(giveId)});
+      return;
+    }
+    if (n.name === '판돌'){
+      const quizTk = tasks.find(t => t.id === 'quiz');
+      const gives = tasks.filter(t => t.id.startsWith('give_'));
+      if (quizTk && !quizTk.done){
+        if (!gives.every(t => t.done)){
+          say(n, ['커피 배달이 먼저예요~ 탕비실은 오른쪽 벽! ☕']);
+          return;
+        }
+        say(n, ['커피 잘 마셨어요. 그럼... 깜짝 퀴즈! 😏', '우리 팀 스프린트 주기는 얼마일까요?'], {choices:{
+          options:['1주','2주','한 달'], answer:1,
+          right:'정답! 역시 잘 듣고 다니네요. 내일은 최종 퀴즈예요, 각오하세요~',
+          wrong:'땡! 제가 어제 소개할 때 말했는데... 힌트 듣고 다시 오세요. (제 자리 근처에서 서성이면 알려줄지도)',
+          onRight: () => taskDone('quiz'),
+        }});
+        return;
+      }
+    }
+  }
+  if (day === 3 && !ended && n.name === '판돌'){
+    const fq = tasks.find(t => t.id === 'finalquiz');
+    if (fq && !fq.done){
+      const cop = tasks.find(t => t.id === 'copier');
+      if (cop && !cop.done){
+        say(n, ['복사기부터 고쳐줘요! 온보딩 수료증을 못 뽑고 있어요 🐼💦 (왼쪽 벽이에요)']);
+        return;
+      }
+      finalQuiz(n);
+      return;
+    }
+  }
+  say(n, [n.small[Math.random()*n.small.length|0]]);
+}
+
+const FINAL_QUIZ = [
+  {q:'최종 퀴즈 1/3! 우리 팀 배포 요일은?', options:['화요일','목요일','금요일'], answer:1, hint:'여울'},
+  {q:'2/3! MEOW CORP 브랜드 컬러는?', options:['빨강 + 검정','보라 + 회색','청록 + 골드'], answer:2, hint:'보리'},
+  {q:'마지막 3/3! 버그를 발견하면 어디에 올리죠?', options:['MEOWTRACK 티켓','이메일','포스트잇'], answer:0, hint:'핑고'},
+];
+function finalQuiz(n){
+  const fq = FINAL_QUIZ[finalIdx];
+  say(n, [fq.q], {choices:{
+    options: fq.options, answer: fq.answer,
+    right: finalIdx < 2 ? '정답! 다음 문제 갑니다.'
+         : '전부 정답! 🎉 온보딩 수료입니다. 승진 축하해요 — 창가 코너 오피스가 이제 냥냥 님 자리예요! 👑',
+    wrong: `음~ 틀렸어요. ${fq.hint}에게 힌트를 듣고 다시 오세요!`,
+    onRight: () => {
+      finalIdx++;
+      if (finalIdx < 3) finalQuiz(n);
+      else { taskDone('finalquiz'); promoted = true; updateMission(); }
+    },
+  }});
+}
+
+/* ---- 미션 상호작용 후보 ---- */
+function missionCandidate(px, pz){
+  if (!inOffice) return null;
+  let best = null;
+  const consider = (x, z, r, label, action) => {
+    const d2 = (px-x)*(px-x) + (pz-z)*(pz-z);
+    if (d2 < r*r && (!best || d2 < best.d2)) best = {d2, label, action};
+  };
+  for (const n of NPCS)
+    if (n.home) consider(n.home.x, n.home.z, 2.4, `E: ${n.emoji} ${n.name}와 대화`, () => npcTalk(n));
+  if (day === 2 && !ended && tasks.some(t => t.id === 'coffee' && !t.done))
+    consider(15, 8, 2.8, 'E: ☕ 커피 5잔 담기', () => {
+      coffees = 5; updateCarry();
+      beep(660,0,.08); beep(880,.1,.08);
+      taskDone('coffee');
+      say(null, ['☕×5 획득! 트레이가 따끈따끈하다. 팀원들에게 돌리자.']);
+    });
+  if (day === 3 && !ended && tasks.some(t => t.id === 'copier' && !t.done))
+    consider(-14.6, -6, 2.8, `E: 🛠 복사기 고치기 (${copierHits}/3)`, () => {
+      copierHits++;
+      beep(160 + copierHits*70, 0, .13);
+      const cp = office.userData.copier;
+      cp.rotation.z = .07;
+      setTimeout(()=> cp.rotation.z = -.05, 90);
+      setTimeout(()=> cp.rotation.z = 0, 180);
+      if (copierHits >= 3){
+        office.userData.copierLed.material = MAT.ledGreen;
+        taskDone('copier');
+        say(null, ['📠 위이잉— 복사기가 살아났다! 판돌에게 알리자.']);
+      }
+    });
+  if (promoted && tasks.some(t => t.id === 'crown' && !t.done))
+    consider(13.8, -7.6, 2.8, 'E: 👑 코너 오피스에 앉기', () => {
+      player.position.set(13.8, .55, -8.05);
+      player.rotation.y = Math.PI;
+      taskDone('crown');
+      ended = true; saveGame();
+      setBigmsg('👑 승진!', '온보딩 수료 & 코너 오피스 입성. 냥생 역전! 🎉');
+      bigmsgEl.style.display = 'block';
+      beep(660,0,.12); beep(880,.13,.12); beep(1100,.26,.15); beep(1320,.42,.3);
+      setTimeout(()=>{ bigmsgEl.style.display = 'none'; renderQuest(); updateMission(); }, 4800);
+    });
+  return best;
+}
+
+/* ---- 하루 마감 / 다음 날 ---- */
+function showDaySummary(){
+  busy = false; sumOpen = true;
+  const heartsStr = NPCS.map(n => `${n.emoji}${'❤️'.repeat(hearts[n.name]||0) || '·'}`).join('&nbsp; ');
+  document.getElementById('sumTitle').textContent = `DAY ${day} 완료!`;
+  document.getElementById('sumBody').innerHTML =
+    `온보딩 진행: ${tasks.filter(t=>t.done).length} / ${tasks.length}<br>호감도: ${heartsStr}` +
+    (ended ? '<br>👑 코너 오피스의 주인!' : '');
+  daysumEl.style.display = 'flex';
+}
+function nextMorning(){
+  if (!sumOpen) return;
+  sumOpen = false;
+  daysumEl.style.display = 'none';
+  day++; saveGame();
+  setupDay();
+  fadeEl.style.opacity = 1;
+  setTimeout(()=>{
+    player.position.set(0, 0, 12); player.rotation.y = Math.PI; heading = Math.PI;
+    camYaw = 0; camPitch = .34; camDist = 9.5;
+    gateT = 0;                                    // 게이트는 매일 아침 다시 태그
+    lobby.userData.wings[0].rotation.y = 0;
+    lobby.userData.wings[1].rotation.y = 0;
+    for (const led of lobby.userData.readerLeds) led.material = MAT.ledRed;
+    setStage('gate');
+    objectiveEl.textContent = `(DAY ${day}) 좋은 아침! 게이트 찍고 12층으로`;
+    fadeEl.style.opacity = 0;
+  }, 650);
+}
+
+/* ================= 입력 ================= */
+const keys = {};
+let currentCand = null;
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (sumOpen){
+    if (e.code === 'KeyE') nextMorning();
+    else if (e.code === 'KeyR') resetGame();
+    return;
+  }
+  if (dlgOpen){
+    if (e.code === 'KeyE') advanceDlg();
+    return;
+  }
+  if (e.code === 'KeyE' && currentCand) currentCand.action();
+});
+addEventListener('keyup', e => keys[e.code] = false);
+
+let camYaw = 0, camPitch = .34, camDist = 9.5;
+let dragging = false, px = 0, py = 0;
+renderer.domElement.addEventListener('mousedown', e => { dragging = true; px = e.clientX; py = e.clientY; });
+addEventListener('mouseup', () => dragging = false);
+addEventListener('mousemove', e => {
+  if (!dragging) return;
+  camYaw   -= (e.clientX - px) * .0045;
+  camPitch += (e.clientY - py) * .0035;
+  camPitch = Math.max(.08, Math.min(1.25, camPitch));
+  px = e.clientX; py = e.clientY;
+});
+addEventListener('wheel', e => {
+  camDist = Math.max(4.5, Math.min(17, camDist * (1 + e.deltaY * .001)));
+}, {passive:true});
+addEventListener('contextmenu', e => e.preventDefault());
+
+/* ================= 충돌 ================= */
+const lobbyCircles = [
+  {x:0, z:-6, r:2.55},                            // 포디움
+  {x:-17, z:8, r:1.35},                           // 나무
+  {x:-14, z:-13, r:1.5},{x:-6, z:-13, r:1.5},{x:6, z:-13, r:1.5},{x:14, z:-13, r:1.5}, // 기둥
+];
+const lobbyBoxes = [
+  {x:-5.6, z:2, hw:1.95, hd:1.05},{x:5.6, z:2, hw:1.95, hd:1.05},      // 데스크
+  {x:-11, z:-10, hw:3.3, hd:1.1},                                       // 카운터
+];
+const officeBoxes = [];
+for (const z of [-4.5, 1.5]) for (const x of [-8, 0, 8]) officeBoxes.push({x, z, hw:1.8, hd:1.0});
+officeBoxes.push({x:15.2, z:8, hw:1.0, hd:1.8});    // 탕비실
+officeBoxes.push({x:-15.2, z:-6, hw:.8, hd:1.0});   // 복사기
+officeBoxes.push({x:13.8, z:-9.2, hw:2.0, hd:1.0}); // 코너 오피스
+
+function collide(pos, prev){
+  const R = .55;
+  if (!inOffice){
+    pos.x = Math.max(-W+1, Math.min(W-1, pos.x));
+    pos.z = Math.max(BACK+1.4, Math.min(FRONT-1, pos.z));
+    // 게이트 라인(z=2): 열리기 전엔 통과 불가, 열려도 개구부(|x|<2)로만
+    if ((prev.z-2)*(pos.z-2) < 0){
+      const open = gateT >= 1;
+      if (!(open && Math.abs(pos.x) < 1.9)) pos.z = 2 + (prev.z > 2 ? .45 : -.45);
+    }
+    for (const c of lobbyCircles){
+      const dx = pos.x-c.x, dz = pos.z-c.z, d = Math.hypot(dx,dz), min = c.r+R;
+      if (d < min && d > 1e-4){ pos.x = c.x + dx/d*min; pos.z = c.z + dz/d*min; }
+    }
+    for (const b of lobbyBoxes) pushOutBox(pos, b, R);
+  } else {
+    pos.x = Math.max(-16, Math.min(16, pos.x));
+    pos.z = Math.max(-11, Math.min(11, pos.z));
+    for (const b of officeBoxes) pushOutBox(pos, b, R);
+  }
+}
+function pushOutBox(pos, b, R){
+  const dx = pos.x - b.x, dz = pos.z - b.z;
+  const ox = b.hw + R - Math.abs(dx), oz = b.hd + R - Math.abs(dz);
+  if (ox > 0 && oz > 0){
+    if (ox < oz) pos.x = b.x + Math.sign(dx||1) * (b.hw + R);
+    else pos.z = b.z + Math.sign(dz||1) * (b.hd + R);
+  }
+}
+
+/* ================= 메인 루프 ================= */
+const clock = new THREE.Clock();
+let heading = Math.PI;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), .05);
+  const t = clock.elapsedTime;
+
+  // 이동
+  let moving = false;
+  if (cut){                                       // 컷신 자동 걷기
+    cut.t += dt;
+    const k = Math.min(1, cut.t / cut.dur);
+    player.position.x = cut.fx + (cut.tx - cut.fx) * k;
+    player.position.z = cut.fz + (cut.tz - cut.fz) * k;
+    moving = true;
+    if (k >= 1){ const then = cut.then; cut = null; if (then) then(); }
+  } else if (!busy && !dlgOpen && !sumOpen && stage !== 'done'){
+    const f = (keys.KeyW?1:0) - (keys.KeyS?1:0);
+    const s = (keys.KeyD?1:0) - (keys.KeyA?1:0);
+    if (f || s){
+      const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
+      const rx = -fz, rz = fx;
+      let mx = fx*f + rx*s, mz = fz*f + rz*s;
+      const len = Math.hypot(mx, mz); mx/=len; mz/=len;
+      const prev = {x:player.position.x, z:player.position.z};
+      const pos = {x:prev.x + mx*6.2*dt, z:prev.z + mz*6.2*dt};
+      collide(pos, prev);
+      player.position.x = pos.x; player.position.z = pos.z;
+      const target = Math.atan2(mx, mz);
+      let d = target - heading;
+      while (d > Math.PI) d -= 2*Math.PI;
+      while (d < -Math.PI) d += 2*Math.PI;
+      heading += d * Math.min(1, dt*12);
+      player.rotation.y = heading;
+      moving = true;
+    }
+  }
+  // 걷기/대기 애니메이션
+  if (stage !== 'done') player.position.y = moving ? Math.abs(Math.sin(t*10))*.14 : Math.sin(t*2)*.03;
+  player.rotation.z = moving ? Math.sin(t*10)*.06 : 0;                  // 걸을 때 좌우로 뒤뚱
+  for (const c of coworkers) c.position.y = .52 + Math.sin(t*2 + c.position.x)*.04;
+
+  // 게이트 날개 열림
+  if (gateT > 0 && gateT < 1){
+    gateT = Math.min(1, gateT + dt*1.6);
+    const a = gateT*(2-gateT) * 1.75;             // easeOut
+    lobby.userData.wings[0].rotation.y =  a;
+    lobby.userData.wings[1].rotation.y = -a;
+  }
+  // 엘베 문 (양방향 개폐)
+  if (lobbyDoorT !== lobbyDoorTarget){
+    lobbyDoorT += Math.sign(lobbyDoorTarget - lobbyDoorT) * dt * 1.1;
+    lobbyDoorT = Math.max(0, Math.min(1, lobbyDoorT));
+    const off = .75 + lobbyDoorT*(2-lobbyDoorT)*1.3;
+    lobby.userData.doors[0].position.x = -off;
+    lobby.userData.doors[1].position.x =  off;
+  }
+  if (officeDoorT !== officeDoorTarget){
+    officeDoorT += Math.sign(officeDoorTarget - officeDoorT) * dt * 1.1;
+    officeDoorT = Math.max(0, Math.min(1, officeDoorT));
+    const off = .75 + officeDoorT*(2-officeDoorT)*1.3;
+    office.userData.doors[0].position.x = -off;
+    office.userData.doors[1].position.x =  off;
+  }
+  // 카드 태그 연출 (리더기 위로 카드가 내려갔다 올라옴)
+  if (tagT > 0 && tagT < 1){
+    tagT = Math.min(1, tagT + dt*1.4);
+    const card = lobby.userData.tagCard;
+    card.position.y = 2.0 - Math.sin(tagT*Math.PI)*.36;
+    card.rotation.z = Math.sin(tagT*Math.PI)*.25;
+  }
+
+  // 조형물 회전 + 마커 바운스
+  lobby.userData.stack.rotation.y = t*.35;
+  marker.userData.cone.position.y = .8 + Math.sin(t*3.2)*.18;
+  marker.rotation.y = t*1.4;
+
+  // 상호작용 후보 (스테이지 진행 + 미션, 가까운 쪽 우선)
+  currentCand = null;
+  if (!busy && !cut && !dlgOpen && !sumOpen){
+    const px = player.position.x, pz = player.position.z;
+    const it = INTERACTS[stage];
+    if (it){
+      const d2 = (px-it.x)*(px-it.x) + (pz-it.z)*(pz-it.z);
+      if (d2 < it.r*it.r) currentCand = {d2, label: it.label, action: doInteract};
+    }
+    const mc = missionCandidate(px, pz);
+    if (mc && (!currentCand || mc.d2 < currentCand.d2)) currentCand = mc;
+  }
+  if (currentCand){
+    promptEl.textContent = currentCand.label;
+    promptEl.style.display = 'block';
+  } else promptEl.style.display = 'none';
+
+  // 카메라
+  const ty = player.position.y + 1.9;
+  const cp = Math.cos(camPitch), spt = Math.sin(camPitch);
+  camera.position.set(
+    player.position.x + Math.sin(camYaw)*camDist*cp,
+    ty + camDist*spt,
+    player.position.z + Math.cos(camYaw)*camDist*cp
+  );
+  // 카메라가 벽 밖으로 나가지 않게 방 안쪽으로 클램프
+  if (inOffice){
+    camera.position.x = Math.max(-16.3, Math.min(16.3, camera.position.x));
+    camera.position.y = Math.min(5.9, camera.position.y);
+    camera.position.z = Math.max(-11.5, Math.min(11.5, camera.position.z));
+  } else {
+    camera.position.x = Math.max(-25.3, Math.min(25.3, camera.position.x));
+    camera.position.y = Math.min(15.4, camera.position.y);
+    camera.position.z = Math.max(BACK+.9, camera.position.z);
+  }
+  camera.lookAt(player.position.x, ty, player.position.z);
+
+  renderer.render(scene, camera);
+}
+/* ---- 시작 ---- */
+/* 개발용: ?office(12층 시작) ?day=N(날짜 지정) ?yaw=각도(시점) */
+const dbgParams = new URLSearchParams(location.search);
+if (dbgParams.has('day')) day = Math.max(1, +dbgParams.get('day') || 1);
+if (dbgParams.has('yaw')) camYaw = parseFloat(dbgParams.get('yaw')) || 0;
+setupDay();
+if (day === 1 && !ended){
+  setStage('badge');
+} else {
+  satOnce = true;
+  document.getElementById('badge').style.display = 'flex';
+  badge3d.visible = true;
+  setStage('gate');
+  objectiveEl.textContent = `(DAY ${day}) 좋은 아침! 게이트 찍고 12층으로`;
+}
+if (dbgParams.has('office')){
+  lobby.visible = false; office.visible = true; inOffice = true;
+  player.position.set(0, 0, 4.6);
+  camDist = 7; camPitch = .3;
+  document.getElementById('badge').style.display = 'flex';
+  badge3d.visible = true;
+  if (day === 1 && !ended){ satOnce = false; setStage('desk'); }
+  else setStage('free');
+}
+animate();
+</script>
+</body>
+</html>
