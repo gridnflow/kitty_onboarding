@@ -339,6 +339,169 @@ const coworkers = [];
   const c = new THREE.PointLight(0xfff2dd, .4, 30); c.position.set(10, 5.2, -4); office.add(c);
 }
 
+/* ================= 옥상 정원 (RF) ================= */
+const roof = new THREE.Group(); roof.visible = false; scene.add(roof);
+{
+  const RX = 14, RZ = 10;
+  // 노을 하늘 돔
+  const skyTex = canvasTex((g,w,h)=>{
+    const gr = g.createLinearGradient(0,0,0,h);
+    gr.addColorStop(0,'#243a66'); gr.addColorStop(.45,'#7a5a8c');
+    gr.addColorStop(.72,'#e8896a'); gr.addColorStop(1,'#f7c05c');
+    g.fillStyle = gr; g.fillRect(0,0,w,h);
+    g.fillStyle = 'rgba(255,214,150,.25)';
+    for (let i=0;i<14;i++){
+      const y = h*.55 + Math.random()*h*.3;
+      g.fillRect(Math.random()*w, y, 90+Math.random()*160, 4+Math.random()*7);
+    }
+  }, 1024, 512);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(90, 24, 14),
+    new THREE.MeshBasicMaterial({map:skyTex, side:THREE.BackSide, fog:false}));
+  dome.position.y = -4;
+  roof.add(dome);
+
+  // 우드 데크 바닥 + 난간(파라펫)
+  const deckTex = canvasTex((g,w,h)=>{
+    g.fillStyle = '#a5825c'; g.fillRect(0,0,w,h);
+    for (let y=0;y<h;y+=42){ g.fillStyle = 'rgba(70,45,20,.45)'; g.fillRect(0,y,w,3); }
+    for (let i=0;i<160;i++){
+      g.fillStyle = `rgba(120,90,55,${.05+Math.random()*.12})`;
+      g.fillRect(Math.random()*w, Math.random()*h, 20+Math.random()*60, 2);
+    }
+  }, 512, 512, 3, 3);
+  const deck = new THREE.Mesh(new THREE.PlaneGeometry(RX*2, RZ*2),
+    new THREE.MeshStandardMaterial({map:deckTex, roughness:.8}));
+  deck.rotation.x = -Math.PI/2; deck.receiveShadow = true; roof.add(deck);
+  box(RX*2+.6, 1.1, .3, MAT.silver, 0, .55, -RZ, roof);
+  box(RX*2+.6, 1.1, .3, MAT.silver, 0, .55, RZ, roof);
+  box(.3, 1.1, RZ*2, MAT.silver, -RX, .55, 0, roof);
+  box(.3, 1.1, RZ*2, MAT.silver, RX, .55, 0, roof);
+  box(RX*2+.7, .1, .4, MAT.gold, 0, 1.12, -RZ, roof);
+
+  // 엘리베이터 하우징 (사무실과 같은 패턴, 뒤쪽 z=+)
+  box(.9, 4.5, .5, MAT.bronze, -1.85, 2.25, RZ-.6, roof, true);
+  box(.9, 4.5, .5, MAT.bronze,  1.85, 2.25, RZ-.6, roof, true);
+  box(4.6, .9, .5, MAT.bronze, 0, 4.05, RZ-.6, roof, true);
+  box(5.2, 4.6, .4, MAT.bronze, 0, 2.3, RZ+1.9, roof, true);            // 하우징 뒷벽
+  box(.4, 4.6, 2.6, MAT.bronze, -2.4, 2.3, RZ+.7, roof, true);
+  box(.4, 4.6, 2.6, MAT.bronze,  2.4, 2.3, RZ+.7, roof, true);
+  box(5.2, .3, 2.9, MAT.bronze, 0, 4.6, RZ+.6, roof, true);
+  box(4.2, .2, 2.2, MAT.silver, 0, .1, RZ+.7, roof);                    // 칸 바닥
+  const rDoorL = box(1.48, 3.8, .18, MAT.gold, -.75, 1.9, RZ-.32, roof, true);
+  const rDoorR = box(1.48, 3.8, .18, MAT.gold,  .75, 1.9, RZ-.32, roof, true);
+  roof.userData.doors = [rDoorL, rDoorR];
+  const rCabLight = new THREE.PointLight(0xfff2dd, .6, 7); rCabLight.position.set(0, 3.8, RZ+.7); roof.add(rCabLight);
+
+  // 벤치 2개 (도시 쪽을 바라봄)
+  for (const bx of [-7.5, 7.5]){
+    const b = new THREE.Group(); b.position.set(bx, 0, -6.2); roof.add(b);
+    const woodm = new THREE.MeshStandardMaterial({color:0x8a5f38, roughness:.7});
+    box(3.2, .12, .5, woodm, 0, .72, 0, b, true);
+    box(3.2, .12, .5, woodm, 0, .72, .55, b, true);
+    box(3.2, .5, .12, woodm, 0, 1.05, -.28, b, true);
+    for (const lx of [-1.4, 1.4]){
+      box(.14, .72, .14, MAT.black, lx, .36, .1, b);
+      box(.14, .9, .14, MAT.black, lx, .5, -.28, b);
+    }
+  }
+
+  // 화분 + 나무/덤불/꽃 (Kenney Nature Kit)
+  const planterMat = new THREE.MeshStandardMaterial({color:0x6e5a48, roughness:.85});
+  const spots = [
+    ['tree_default', -11.5, -7, 4.2], ['tree_oak', 11.5, -7, 4.2],
+    ['tree_pineDefaultA', -11.5, 6.5, 4.2], ['tree_default', 11.5, 6.5, 4.2],
+  ];
+  for (const [name, x, z, s] of spots){
+    box(2.4, .9, 2.4, planterMat, x, .45, z, roof, true);
+    const t = makeNature(name, s);
+    t.position.set(x, .9, z);
+    roof.add(t);
+  }
+  for (const [name, x, z, s] of [
+    ['plant_bushLarge', -4, -8.8, 3], ['plant_bushLarge', 4, -8.8, 3],
+    ['flower_purpleA', -2, -8.6, 3.4], ['flower_yellowA', 2, -8.6, 3.4],
+    ['grass_large', -6, -8.7, 3], ['grass_large', 6, -8.7, 3],
+  ]){
+    const p = makeNature(name, s);
+    p.position.set(x, 0, z);
+    roof.add(p);
+  }
+
+  // 스트링 라이트 (기둥 2개 사이 전구들)
+  for (const sx of [-9, 9]) cyl(.06, .08, 3.4, 8, MAT.black, sx, 1.7, -3.5, roof, true);
+  for (let i = 0; i <= 12; i++){
+    const t = i / 12;
+    const x = -9 + t*18;
+    const y = 3.3 - Math.sin(t*Math.PI)*.7;
+    sph(.09, MAT.goldLit, x, y, -3.5, roof);
+  }
+  const warm1 = new THREE.PointLight(0xffc98a, .8, 22); warm1.position.set(0, 4, -3.5); roof.add(warm1);
+  const warm2 = new THREE.PointLight(0xff9a6a, .5, 30); warm2.position.set(0, 8, -14); roof.add(warm2);
+
+  const sign = textPlane('🌇 ROOFTOP GARDEN', 5, .6, '#ffd9a0');
+  sign.position.set(0, 4.2, RZ-.85); roof.add(sign);
+}
+
+/* ================= 층 레지스트리 =================
+   새 층 추가 절차: ① 그룹 빌드 ② 여기 등록 ③ data.js 콘텐츠. */
+const FLOORS = {
+  1: {
+    label: '1F · Lobby', icon: '🏢', groupRef: () => lobby,
+    doors: () => lobby.userData.doors, doorT: 0, doorTarget: 0,
+    cabIn: [0, -21.2], cabSpawn: [0, -21.2], exit: [0, -15.5, 1.3],
+    spawnRotY: 0, cam: {yaw: Math.PI, pitch: .3, dist: 8},
+    bounds: {x0: -25, x1: 25, z0: -18.6, z1: 21},
+    clamp: c => {
+      c.x = Math.max(-25.3, Math.min(25.3, c.x));
+      c.y = Math.min(15.4, c.y);
+      c.z = Math.max(-19.1, c.z);
+    },
+    circles: [
+      {x:0, z:-6, r:2.55}, {x:-17, z:8, r:1.35},
+      {x:-14, z:-13, r:1.5}, {x:-6, z:-13, r:1.5}, {x:6, z:-13, r:1.5}, {x:14, z:-13, r:1.5},
+    ],
+    boxes: [
+      {x:-5.6, z:2, hw:1.95, hd:1.05}, {x:5.6, z:2, hw:1.95, hd:1.05},
+      {x:-11, z:-10, hw:3.3, hd:1.1},
+    ],
+  },
+  12: {
+    label: '12F · Our Team', icon: '💼', groupRef: () => office,
+    doors: () => office.userData.doors, doorT: 0, doorTarget: 0,
+    cabIn: [0, 13.5], cabSpawn: [0, 13.4], exit: [0, 6.0, 1.4],
+    spawnRotY: Math.PI, cam: {yaw: 0, pitch: .3, dist: 7},
+    bounds: {x0: -16, x1: 16, z0: -11, z1: 11},
+    clamp: c => {
+      c.x = Math.max(-16.3, Math.min(16.3, c.x));
+      c.y = Math.min(5.9, c.y);
+      c.z = Math.max(-11.5, Math.min(11.5, c.z));
+    },
+    circles: [],
+    boxes: [],   // game.js에서 책상/프롭 채움
+  },
+  13: {
+    label: 'RF · Rooftop Garden', icon: '🌇', groupRef: () => roof,
+    doors: () => roof.userData.doors, doorT: 0, doorTarget: 0,
+    cabIn: [0, 10.7], cabSpawn: [0, 10.7], exit: [0, 5.5, 1.2],
+    spawnRotY: Math.PI, cam: {yaw: 0, pitch: .3, dist: 7.5},
+    bounds: {x0: -13.4, x1: 13.4, z0: -9.4, z1: 11},
+    clamp: c => {
+      c.x = Math.max(-13.8, Math.min(13.8, c.x));
+      c.y = Math.min(14, c.y);
+      c.z = Math.max(-9.8, Math.min(8.6, c.z));   // 엘베 하우징 앞까지만
+    },
+    circles: [
+      {x:-11.5, z:-7, r:1.7}, {x:11.5, z:-7, r:1.7},
+      {x:-11.5, z:6.5, r:1.7}, {x:11.5, z:6.5, r:1.7},
+    ],
+    boxes: [
+      {x:-7.5, z:-6.1, hw:1.7, hd:.6}, {x:7.5, z:-6.1, hw:1.7, hd:.6},   // 벤치
+      {x:0, z:11, hw:2.7, hd:1.6},                                       // 엘베 하우징
+    ],
+  },
+};
+const floorName = n => n === 13 ? 'RF' : n + 'F';
+
 /* ================= 전역 조명 ================= */
 scene.add(new THREE.AmbientLight(0xbfc8d8, .22));
 scene.add(new THREE.HemisphereLight(0xcfd8e8, 0x201810, .2));

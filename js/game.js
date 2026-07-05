@@ -11,9 +11,11 @@ const bigmsgEl = document.getElementById('bigmsg');
 let stage = 'badge';         // badge -> gate -> elevator -> desk -> done
 let busy = false;
 let gateT = 0, tagT = 0;     // 게이트 날개 / 카드 태그 연출 진행도
-let lobbyDoorT = 0, lobbyDoorTarget = 0;   // 엘베 문 (0 닫힘, 1 열림)
-let officeDoorT = 0, officeDoorTarget = 0;
-let inOffice = false;
+let currentFloor = 1;        // FLOORS 키 (world.js)
+let inOffice = false;        // currentFloor === 12 캐시
+let panelOpen = false;       // 층 선택 패널
+let sitting = false;         // 벤치 착석 중 (y 애니 보호)
+let roofBonusGiven = false, roofGuest = null, roofGuestNpc = null;
 let satOnce = false;         // 한 번 출근 완료했는지
 let cut = null;              // 컷신 자동 걷기
 
@@ -78,10 +80,10 @@ function runFloors(from, to, arriveLbl, onArrive){
   floorLblEl.textContent = to > from ? 'Going up…' : 'Going down…';
   const step = to > from ? 1 : -1;
   let f = from;
-  floorNumEl.textContent = from + 'F';
+  floorNumEl.textContent = floorName(from);
   const iv = setInterval(()=>{
     f += step;
-    floorNumEl.textContent = f + 'F';
+    floorNumEl.textContent = floorName(f);
     playSnd('tick', .18);
     if (f === to){
       clearInterval(iv);
@@ -90,64 +92,63 @@ function runFloors(from, to, arriveLbl, onArrive){
     }
   }, window.RIDE_FAST ? 8 : 110);
 }
-/* 엘리베이터 탑승 공용 시퀀스: 문 열림 → 칸 진입 → 문 닫힘 → 층 이동 → 반대층 하차 */
-function rideSequence(cfg){
+/* 엘리베이터: FLOORS 레지스트리 기반 범용 이동 */
+function rideTo(target){
+  if (target === currentFloor) return;
+  const from = FLOORS[currentFloor], to = FLOORS[target];
   busy = true;
   promptEl.style.display = 'none';
   marker.visible = false;
   playSnd('dooropen', .5);
-  cfg.setDoor(1);                                 // 문 열림
-  setTimeout(()=> walkTo(cfg.walkIn[0], cfg.walkIn[1], 1.5, ()=>{
+  from.doorTarget = 1;                            // 출발층 문 열림
+  setTimeout(()=> walkTo(from.cabIn[0], from.cabIn[1], 1.5, ()=>{
     playSnd('doorclose', .5);
-    cfg.setDoor(0);                               // 문 닫힘
-    setTimeout(()=> runFloors(cfg.from, cfg.to, cfg.arriveLbl, ()=>{
-      cfg.onSwap();                               // 씬 전환 + 도착층 문 열림
+    from.doorTarget = 0;
+    setTimeout(()=> runFloors(currentFloor, target, to.label, ()=>{
+      from.groupRef().visible = false;
+      to.groupRef().visible = true;
+      currentFloor = target;
+      inOffice = target === 12;
+      player.position.set(to.cabSpawn[0], 0, to.cabSpawn[1]);
+      player.rotation.y = to.spawnRotY; heading = to.spawnRotY;
+      camYaw = to.cam.yaw; camPitch = to.cam.pitch; camDist = to.cam.dist;
+      to.doorTarget = 1;                          // 도착층 문 열림
       fadeEl.style.opacity = 0;
       setTimeout(()=>{
         floorNumEl.textContent = ''; floorLblEl.textContent = '';
-        walkTo(cfg.walkOut[0], cfg.walkOut[1], cfg.walkOut[2], cfg.onDone);
+        walkTo(to.exit[0], to.exit[1], to.exit[2], ()=>{
+          to.doorTarget = 0;
+          arriveFloor(target);
+          busy = false;
+        });
       }, 600);
     }), 1200);
   }), 950);
 }
-function rideElevator(){                          // 1층 → 12층
-  rideSequence({
-    setDoor: v => lobbyDoorTarget = v,
-    walkIn: [0, -21.2],
-    from: 1, to: 12, arriveLbl: '12F · Our Team',
-    onSwap(){
-      lobby.visible = false; office.visible = true; inOffice = true;
-      player.position.set(0, 0, 13.4);
-      player.rotation.y = Math.PI; heading = Math.PI;
-      camYaw = 0; camPitch = .3; camDist = 7;
-      officeDoorTarget = 1;
-    },
-    walkOut: [0, 6.0, 1.4],
-    onDone(){
-      officeDoorTarget = 0;
-      setStage(satOnce ? 'free' : 'desk');
-      busy = false;
-    },
-  });
+function arriveFloor(n){
+  if (n === 1){
+    showDaySummary();                             // 1층 도착 = 하루 마감
+  } else if (n === 12){
+    setStage(satOnce ? 'free' : 'desk');
+  } else if (n === 13){
+    setStage('roof');
+    spawnRoofGuest();
+  }
 }
-function rideDown(){                              // 12층 → 1층 (퇴근)
-  rideSequence({
-    setDoor: v => officeDoorTarget = v,
-    walkIn: [0, 13.5],
-    from: 12, to: 1, arriveLbl: '1F · Lobby',
-    onSwap(){
-      office.visible = false; lobby.visible = true; inOffice = false;
-      player.position.set(0, 0, -21.2);
-      player.rotation.y = 0; heading = 0;
-      camYaw = Math.PI; camPitch = .3; camDist = 8;
-      lobbyDoorTarget = 1;
-    },
-    walkOut: [0, -15.5, 1.3],
-    onDone(){
-      lobbyDoorTarget = 0;
-      showDaySummary();                           // 하루 마감
-    },
-  });
+/* 호감도가 가장 높은 동료가 옥상에 올라와 있다 (하루 1회 보너스 대화) */
+function spawnRoofGuest(){
+  if (roofGuest) return;
+  let best = null;
+  for (const n of NPCS) if ((hearts[n.name]||0) > 0 && (!best || hearts[n.name] > hearts[best.name])) best = n;
+  if (!best) return;
+  roofGuestNpc = best;
+  roofGuest = makePet(best.species, 1.75);
+  roofGuest.position.set(-5.5, 0, -8.2);
+  roofGuest.rotation.y = Math.PI;                 // 도시 쪽을 바라봄
+  roof.add(roofGuest);
+}
+function clearRoofGuest(){
+  if (roofGuest){ roof.remove(roofGuest); roofGuest = null; roofGuestNpc = null; }
 }
 
 function doInteract(){
@@ -176,11 +177,9 @@ function doInteract(){
       busy = false;
     }, 800);
   } else if (stage === 'elevator'){
-    rideElevator();
+    openFloorPanel();
   } else if (stage === 'free'){
-    if (tasksLeft().length && !(ended || day > 3)){
-      say(null, ['Still got tasks left today! Check the list at the top right.']);
-    } else rideDown();
+    openFloorPanel();
   } else if (stage === 'desk'){
     player.position.set(8, .5, 2.75);
     player.rotation.y = Math.PI;
@@ -428,12 +427,20 @@ function finalQuiz(n){
 
 /* ---- 미션 상호작용 후보 ---- */
 function missionCandidate(px, pz){
-  if (!inOffice) return null;
   let best = null;
   const consider = (x, z, r, label, action) => {
     const d2 = (px-x)*(px-x) + (pz-z)*(pz-z);
     if (d2 < r*r && (!best || d2 < best.d2)) best = {d2, label, action};
   };
+  if (currentFloor === 13){                        // 옥상
+    consider(0, 8.6, 2.6, 'E: Elevator', openFloorPanel);
+    for (const bx of [-7.5, 7.5])
+      consider(bx, -5.3, 1.8, 'E: Sit on the bench 🌇', () => benchSit(bx));
+    if (roofGuest && roofGuestNpc)
+      consider(-5.5, -7.4, 2.4, `E: Talk to ${roofGuestNpc.emoji} ${roofGuestNpc.name}`, roofTalk);
+    return best;
+  }
+  if (!inOffice) return null;
   for (const n of NPCS)
     if (n.home) consider(n.home.x, n.home.z, 2.4, `E: Talk to ${n.emoji} ${n.name}`, () => npcTalk(n));
   if (day === 2 && !ended && tasks.some(t => t.id === 'coffee' && !t.done))
@@ -472,6 +479,57 @@ function missionCandidate(px, pz){
   return best;
 }
 
+/* ---- 옥상: 벤치/게스트 ---- */
+function benchSit(bx){
+  const prev = {x: player.position.x, z: player.position.z, ry: player.rotation.y};
+  player.position.set(bx, .84, -6.05);
+  player.rotation.y = Math.PI;
+  sitting = true;
+  say(null, ['The city hums below. The sunset melts over the skyline...',
+             'A perfect little break. 🌇'], {onEnd: () => {
+    sitting = false;
+    player.position.set(prev.x, 0, prev.z);
+    player.rotation.y = prev.ry;
+  }});
+}
+function roofTalk(){
+  const n = roofGuestNpc;
+  const line = n.roofLine || 'Nice view, huh?';
+  if (!roofBonusGiven){
+    roofBonusGiven = true;
+    hearts[n.name] = (hearts[n.name]||0) + 1;
+    saveGame();
+    say(n, [line, `(❤️ ${n.name} enjoyed the rooftop chat!)`]);
+  } else say(n, [line]);
+}
+
+/* ---- 층 선택 패널 ---- */
+const floorselEl = document.getElementById('floorsel');
+function openFloorPanel(){
+  panelOpen = true;
+  playSnd('panel', .5);
+  promptEl.style.display = 'none';
+  const list = document.getElementById('floorselList');
+  list.innerHTML = '';
+  for (const n of [13, 12, 1]){
+    const f = FLOORS[n];
+    const b = document.createElement('button');
+    const here = n === currentFloor;
+    const locked = n === 1 && currentFloor !== 1 && tasksLeft().length > 0 && !(ended || day > 3);
+    b.innerHTML = `<span>${f.icon} ${f.label}</span><span class="fs-note">${
+      here ? 'You are here' : n === 1 ? (locked ? '🔒 Finish today\'s tasks' : 'Leave work · end the day') : ''}</span>`;
+    b.disabled = here || locked;
+    b.onclick = () => { closeFloorPanel(); rideTo(n); };
+    list.appendChild(b);
+  }
+  floorselEl.style.display = 'flex';
+}
+function closeFloorPanel(){
+  panelOpen = false;
+  floorselEl.style.display = 'none';
+}
+document.getElementById('floorselClose').onclick = closeFloorPanel;
+
 /* ---- 하루 마감 / 다음 날 ---- */
 function showDaySummary(){
   busy = false; sumOpen = true;
@@ -491,6 +549,9 @@ function nextMorning(){
   setupDay();
   fadeEl.style.opacity = 1;
   setTimeout(()=>{
+    currentFloor = 1; inOffice = false;
+    lobby.visible = true; office.visible = false; roof.visible = false;
+    clearRoofGuest(); roofBonusGiven = false;
     player.position.set(0, 0, 12); player.rotation.y = Math.PI; heading = Math.PI;
     camYaw = 0; camPitch = .34; camDist = 9.5;
     gateT = 0;                                    // 게이트는 매일 아침 다시 태그
@@ -517,6 +578,10 @@ addEventListener('keydown', e => {
     if (e.code === 'KeyE') advanceDlg();
     return;
   }
+  if (panelOpen){
+    if (e.code === 'Escape' || e.code === 'KeyE') closeFloorPanel();
+    return;
+  }
   if (e.code === 'KeyM'){ toast(toggleMute() ? '🔇 Muted' : '🔊 Sound on'); return; }
   if (e.code === 'KeyE' && currentCand) currentCand.action();
 });
@@ -538,42 +603,30 @@ addEventListener('wheel', e => {
 }, {passive:true});
 addEventListener('contextmenu', e => e.preventDefault());
 
-/* ================= 충돌 ================= */
-const lobbyCircles = [
-  {x:0, z:-6, r:2.55},                            // 포디움
-  {x:-17, z:8, r:1.35},                           // 나무
-  {x:-14, z:-13, r:1.5},{x:-6, z:-13, r:1.5},{x:6, z:-13, r:1.5},{x:14, z:-13, r:1.5}, // 기둥
-];
-const lobbyBoxes = [
-  {x:-5.6, z:2, hw:1.95, hd:1.05},{x:5.6, z:2, hw:1.95, hd:1.05},      // 데스크
-  {x:-11, z:-10, hw:3.3, hd:1.1},                                       // 카운터
-];
-const officeBoxes = [];
-for (const z of [-4.5, 1.5]) for (const x of [-8, 0, 8]) officeBoxes.push({x, z, hw:1.8, hd:1.0});
-officeBoxes.push({x:15.2, z:8, hw:1.0, hd:1.8});    // 탕비실
-officeBoxes.push({x:-15.2, z:-6, hw:.8, hd:1.0});   // 복사기
-officeBoxes.push({x:13.8, z:-9.2, hw:2.0, hd:1.0}); // 코너 오피스
+/* ================= 충돌 (FLOORS 데이터 기반) ================= */
+// 12층 가구 충돌 박스 등록
+for (const z of [-4.5, 1.5]) for (const x of [-8, 0, 8]) FLOORS[12].boxes.push({x, z, hw:1.8, hd:1.0});
+FLOORS[12].boxes.push({x:15.2, z:8, hw:1.0, hd:1.8});    // 탕비실
+FLOORS[12].boxes.push({x:-15.2, z:-6, hw:.8, hd:1.0});   // 복사기
+FLOORS[12].boxes.push({x:13.8, z:-9.2, hw:2.0, hd:1.0}); // 코너 오피스
 
 function collide(pos, prev){
   const R = .55;
-  if (!inOffice){
-    pos.x = Math.max(-W+1, Math.min(W-1, pos.x));
-    pos.z = Math.max(BACK+1.4, Math.min(FRONT-1, pos.z));
+  const f = FLOORS[currentFloor];
+  pos.x = Math.max(f.bounds.x0, Math.min(f.bounds.x1, pos.x));
+  pos.z = Math.max(f.bounds.z0, Math.min(f.bounds.z1, pos.z));
+  if (currentFloor === 1){
     // 게이트 라인(z=2): 열리기 전엔 통과 불가, 열려도 개구부(|x|<2)로만
     if ((prev.z-2)*(pos.z-2) < 0){
       const open = gateT >= 1;
       if (!(open && Math.abs(pos.x) < 1.9)) pos.z = 2 + (prev.z > 2 ? .45 : -.45);
     }
-    for (const c of lobbyCircles){
-      const dx = pos.x-c.x, dz = pos.z-c.z, d = Math.hypot(dx,dz), min = c.r+R;
-      if (d < min && d > 1e-4){ pos.x = c.x + dx/d*min; pos.z = c.z + dz/d*min; }
-    }
-    for (const b of lobbyBoxes) pushOutBox(pos, b, R);
-  } else {
-    pos.x = Math.max(-16, Math.min(16, pos.x));
-    pos.z = Math.max(-11, Math.min(11, pos.z));
-    for (const b of officeBoxes) pushOutBox(pos, b, R);
   }
+  for (const c of f.circles){
+    const dx = pos.x-c.x, dz = pos.z-c.z, d = Math.hypot(dx,dz), min = c.r+R;
+    if (d < min && d > 1e-4){ pos.x = c.x + dx/d*min; pos.z = c.z + dz/d*min; }
+  }
+  for (const b of f.boxes) pushOutBox(pos, b, R);
 }
 function pushOutBox(pos, b, R){
   const dx = pos.x - b.x, dz = pos.z - b.z;
@@ -601,7 +654,7 @@ function animate(){
     player.position.z = cut.fz + (cut.tz - cut.fz) * k;
     moving = true;
     if (k >= 1){ const then = cut.then; cut = null; if (then) then(); }
-  } else if (!busy && !dlgOpen && !sumOpen && stage !== 'done'){
+  } else if (!busy && !dlgOpen && !sumOpen && !panelOpen && stage !== 'done'){
     const f = (keys.KeyW?1:0) - (keys.KeyS?1:0);
     const s = (keys.KeyD?1:0) - (keys.KeyA?1:0);
     if (f || s){
@@ -623,7 +676,7 @@ function animate(){
     }
   }
   // 걷기/대기 애니메이션
-  if (stage !== 'done') player.position.y = moving ? Math.abs(Math.sin(t*10))*.14 : Math.sin(t*2)*.03;
+  if (stage !== 'done' && !sitting) player.position.y = moving ? Math.abs(Math.sin(t*10))*.14 : Math.sin(t*2)*.03;
   player.rotation.z = moving ? Math.sin(t*10)*.06 : 0;                  // 걸을 때 좌우로 뒤뚱
   for (const c of coworkers) c.position.y = .52 + Math.sin(t*2 + c.position.x)*.04;
 
@@ -634,20 +687,15 @@ function animate(){
     lobby.userData.wings[0].rotation.y =  a;
     lobby.userData.wings[1].rotation.y = -a;
   }
-  // 엘베 문 (양방향 개폐)
-  if (lobbyDoorT !== lobbyDoorTarget){
-    lobbyDoorT += Math.sign(lobbyDoorTarget - lobbyDoorT) * dt * 1.1;
-    lobbyDoorT = Math.max(0, Math.min(1, lobbyDoorT));
-    const off = .75 + lobbyDoorT*(2-lobbyDoorT)*1.3;
-    lobby.userData.doors[0].position.x = -off;
-    lobby.userData.doors[1].position.x =  off;
-  }
-  if (officeDoorT !== officeDoorTarget){
-    officeDoorT += Math.sign(officeDoorTarget - officeDoorT) * dt * 1.1;
-    officeDoorT = Math.max(0, Math.min(1, officeDoorT));
-    const off = .75 + officeDoorT*(2-officeDoorT)*1.3;
-    office.userData.doors[0].position.x = -off;
-    office.userData.doors[1].position.x =  off;
+  // 엘베 문 (모든 층 공통, FLOORS 레지스트리)
+  for (const f of Object.values(FLOORS)){
+    if (f.doorT === f.doorTarget) continue;
+    f.doorT += Math.sign(f.doorTarget - f.doorT) * dt * 1.1;
+    f.doorT = Math.max(0, Math.min(1, f.doorT));
+    const off = .75 + f.doorT*(2-f.doorT)*1.3;
+    const doors = f.doors();
+    doors[0].position.x = -off;
+    doors[1].position.x =  off;
   }
   // 카드 태그 연출 (리더기 위로 카드가 내려갔다 올라옴)
   if (tagT > 0 && tagT < 1){
@@ -673,7 +721,7 @@ function animate(){
 
   // 상호작용 후보 (스테이지 진행 + 미션, 가까운 쪽 우선)
   currentCand = null;
-  if (!busy && !cut && !dlgOpen && !sumOpen){
+  if (!busy && !cut && !dlgOpen && !sumOpen && !panelOpen){
     const px = player.position.x, pz = player.position.z;
     const it = INTERACTS[stage];
     if (it){
@@ -696,16 +744,8 @@ function animate(){
     ty + camDist*spt,
     player.position.z + Math.cos(camYaw)*camDist*cp
   );
-  // 카메라가 벽 밖으로 나가지 않게 방 안쪽으로 클램프
-  if (inOffice){
-    camera.position.x = Math.max(-16.3, Math.min(16.3, camera.position.x));
-    camera.position.y = Math.min(5.9, camera.position.y);
-    camera.position.z = Math.max(-11.5, Math.min(11.5, camera.position.z));
-  } else {
-    camera.position.x = Math.max(-25.3, Math.min(25.3, camera.position.x));
-    camera.position.y = Math.min(15.4, camera.position.y);
-    camera.position.z = Math.max(BACK+.9, camera.position.z);
-  }
+  // 카메라가 벽 밖으로 나가지 않게 층별 클램프 (FLOORS 레지스트리)
+  FLOORS[currentFloor].clamp(camera.position);
   camera.lookAt(player.position.x, ty, player.position.z);
 
   renderer.render(scene, camera);
@@ -731,22 +771,33 @@ if (dbgParams.has('autoride')){          // 개발용: 엘베 시퀀스 자동 �
     if (dbgParams.has('office')){
       tasks.forEach(t => t.done = true); renderQuest();
       player.position.set(0, 0, 8);
-      rideDown();
+      rideTo(1);
     } else {
       gateT = 1;
       setStage('elevator');
       player.position.set(0, 0, -15);
-      rideElevator();
+      rideTo(12);
     }
   }, 1500);
 }
 if (dbgParams.has('office')){
-  lobby.visible = false; office.visible = true; inOffice = true;
+  lobby.visible = false; office.visible = true;
+  currentFloor = 12; inOffice = true;
   player.position.set(0, 0, 4.6);
   camDist = 7; camPitch = .3;
   document.getElementById('badge').style.display = 'flex';
   badge3d.visible = true;
   if (day === 1 && !ended){ satOnce = false; setStage('desk'); }
   else setStage('free');
+}
+if (dbgParams.has('roof')){
+  lobby.visible = false; office.visible = false; roof.visible = true;
+  currentFloor = 13; inOffice = false;
+  player.position.set(0, 0, 5);
+  camDist = 7.5; camPitch = .3;
+  document.getElementById('badge').style.display = 'flex';
+  badge3d.visible = true;
+  setStage('roof');
+  spawnRoofGuest();
 }
 animate();

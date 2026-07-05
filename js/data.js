@@ -4,26 +4,31 @@
 /* ================= NPC 정의 (온보딩 지식 포함) ================= */
 const NPCS = [
   {species:'dog', name:'Bori', emoji:'🐶', role:'Designer',
+   roofLine:'Sunsets are the best color reference. Teal shadows, gold light... nature gets our brand. 🎨',
    intro:["Hi! I'm Bori, the designer 🎨 So nice to meet you!",
           'Our brand colors are "Teal + Gold". You saw the lobby, right? They\'re everywhere~',
           'Design requests are always welcome. Oh, and... this might be on a quiz? 🐾'],
    small:['Feeling great today! 🎨','Sketching 3 mockups~ Teal + gold never fails.','Your fur color is so pretty, Nyang~']},
   {species:'fox', name:'Yeoul', emoji:'🦊', role:'Senior Developer',
+   roofLine:'I come up here after every Thursday deploy. Best debugging spot in the building.',
    intro:["I'm Yeoul. I write the code around here.",
           'One thing to remember — we deploy every "Thursday". No Friday deploys. Protect the weekend.',
           'Ask me anything about the codebase.'],
    small:['Refactoring... do not touch.','Thursday deploy is ready. Flawless.','Coffee is what makes code quality.']},
   {species:'panda', name:'Pandol', emoji:'🐼', role:'Product Manager',
+   roofLine:'A well-planned break is part of the sprint. Glad you found this place.',
    intro:["Hello, I'm Pandol, the PM.",
           'Our team runs on "2-week" sprints. Planning on Monday, retro on Friday.',
           "When onboarding wraps up, I'll give you a little quiz. Listen carefully~ 😏"],
    small:['Sorting the schedule: 1) meeting 2) meeting 3) meeting...',"Sprints are 2 weeks! Don't forget.",'Priorities are everything.']},
   {species:'penguin', name:'Pingo', emoji:'🐧', role:'QA Engineer',
+   roofLine:'Up here there are... no bugs. Well, except the ladybugs. Those are fine.',
    intro:["Oh... hi, I'm Pingo from QA.",
           'If you find a bug, please file it as a "MEOWTRACK" ticket. If you email it... it gets lost.',
           'There are always more edge cases than we think...'],
    small:['Just found 3 bugs... sigh.','Did you check MEOWTRACK?','Have you tested the empty-input case...?']},
   {species:'tiger', name:'Hojin', emoji:'🐯', role:'Data Analyst',
+   roofLine:'Fun stat: rooftop visits correlate with +23% afternoon productivity. Enjoy.',
    intro:["Hey rookie! Hojin, the data guy.",
           'Every metric lives on our dashboard "MEOWBOARD". Speak in numbers, listen in numbers.',
           'Not vibes — data. Got it? 🐯'],
@@ -39,14 +44,15 @@ const OBJECTIVES = {
   desk: 'Welcome to 12F! Find your desk by the window',
   done: 'Clocked in! Time to work, meow 🐾',
   free: 'Clocked in! You can take the elevator down anytime 🐾',
+  roof: 'Rooftop garden — take a breather 🌇',
 };
 
 const INTERACTS = {
   badge:    {x:-5.6, z:3.8, r:2.5, label:'E: Get your badge', markPos:[-5.6,2.7,2.6]},
   gate:     {x:0, z:3.4,  r:2.6, label:'E: Tap badge to enter', markPos:[0,2.6,2.6]},
-  elevator: {x:0, z:-17.6,r:2.8, label:'E: Take elevator to 12F', markPos:[0,4.9,-18.2]},
+  elevator: {x:0, z:-17.6,r:2.8, label:'E: Elevator', markPos:[0,4.9,-18.2]},
   desk:     {x:8, z:3.4,  r:2.6, label:'E: Sit at your desk (clock in)', markPos:[8,3.1,2.8]},
-  free:     {x:0, z:9.4,  r:2.8, label:'E: Leave work (elevator)', markPos:[0,4.9,9.2]},
+  free:     {x:0, z:9.4,  r:2.8, label:'E: Elevator (leave / rooftop)', markPos:[0,4.9,9.2]},
 };
 
 const FINAL_QUIZ = [

@@ -150,6 +150,24 @@ const petLoader = (()=>{
   mgr.setURLModifier(url => url.includes('colormap') ? 'data:image/png;base64,' + PETS_B64.colormap : url);
   return new THREE.GLTFLoader(mgr);
 })();
+/* ---- Kenney Nature Kit 로더 (텍스처 없음 → 매니저 불필요) ---- */
+const natureLoader = new THREE.GLTFLoader();
+const natureCache = {};
+function makeNature(name, scale, onReady){
+  const g = new THREE.Group();
+  const build = srcScene => {
+    const m = srcScene.clone(true);
+    m.scale.setScalar(scale || 1);
+    m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    g.add(m);
+    if (onReady) onReady(g);
+  };
+  if (natureCache[name]) build(natureCache[name]);
+  else natureLoader.parse(b64ToBuf(NATURE_B64[name]), '', gl => { natureCache[name] = gl.scene; build(gl.scene); },
+    e => console.warn('nature load fail', name, e));
+  return g;
+}
+
 /* ---- 사운드 (sounds.js의 SND_B64, M 키로 음소거) ---- */
 let sndMuted = localStorage.getItem('meow_mute') === '1';
 let sndCtx = null;
