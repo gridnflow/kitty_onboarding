@@ -143,4 +143,5 @@ python3 -m http.server 8137 &   # file://로는 헤드리스가 안 열림
 - 엘리베이터가 있는 벽은 **개구부를 뚫어야**(벽 3분할) 문이 열렸을 때 칸 내부가 보인다. 프레임을 통짜 박스로 만들면 막힌다.
 - 큐브펫은 정면이 곧 얼굴 — 몸에 뭘 붙일 때 정면(+z)에 붙이면 얼굴에 붙은 것처럼 보인다(사원증을 옆구리로 옮긴 이유).
 - `?day=` 디버그로 테스트한 뒤 localStorage에 저장된 진행도와 헷갈리지 말 것(디버그 파라미터는 저장 안 함).
-- 대사·목표 텍스트는 전부 한국어. 사용자 커밋 규칙: 커밋 메시지는 영어, Co-Authored-By 금지 (현재 git 저장소 아님 — init 여부는 사용자에게 물어볼 것).
+- 게임 내 텍스트는 전부 영어(NPC 이름: Bori/Yeoul/Pandol/Pingo/Hojin, 플레이어: Nyang). 새 콘텐츠도 영어로 작성할 것.
+- 저장소: https://github.com/gridnflow/kitty_onboarding (public, main 브랜치). 커밋 규칙: 메시지는 영어, Co-Authored-By 줄 금지.
